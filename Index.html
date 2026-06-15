@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PAC Container Pack Checklist</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap');
+
+  :root {
+    --navy: #1B3172;
+    --sky: #29ABE2;
+    --yellow: #F5C518;
+    --white: #ffffff;
+    --light: #F4F7FB;
+    --border: #D0DCF0;
+    --text: #1a1a2e;
+    --muted: #6b7a99;
+    --green: #2ecc71;
+    --row-alt: #f0f5fb;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: var(--light); color: var(--text); min-height: 100vh; }
+
+  @media screen {
+    .screen-header {
+      background: var(--navy);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .logo-area { display: flex; align-items: center; gap: 12px; }
+    .logo-box { background: var(--sky); color: white; font-weight: 700; font-size: 13px; letter-spacing: 1.5px; padding: 6px 10px; border-radius: 4px; }
+    .logo-title { color: white; font-size: 15px; font-weight: 600; }
+    .logo-sub { color: var(--sky); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .save-btn {
+      background: var(--yellow); color: var(--navy); border: none; padding: 10px 20px;
+      border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px;
+    }
+    .save-btn:hover { opacity: 0.85; }
+
+    .container { max-width: 1000px; margin: 24px auto; padding: 0 16px 40px; }
+
+    .card { background: white; border-radius: 10px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 20px; }
+    .card-header { background: var(--navy); color: white; padding: 14px 20px; font-weight: 600; font-size: 13px; letter-spacing: 0.5px; text-transform: uppercase; }
+
+    /* GROUP SELECTOR BAR */
+    .group-bar {
+      display: flex; align-items: center; gap: 12px; padding: 14px 18px; flex-wrap: wrap;
+    }
+    .group-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; white-space: nowrap; }
+    .group-select {
+      flex: 1; min-width: 200px; border: 2px solid var(--border); border-radius: 6px;
+      padding: 8px 12px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500;
+      color: var(--text); background: white; outline: none; cursor: pointer;
+    }
+    .group-select:focus { border-color: var(--sky); }
+    .load-btn {
+      background: var(--sky); color: white; border: none; padding: 9px 18px;
+      border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; white-space: nowrap;
+    }
+    .load-btn:hover { opacity: 0.85; }
+    .load-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .status-msg { font-size: 12px; color: var(--muted); padding: 0 18px 12px; min-height: 20px; }
+    .status-msg.error { color: #e74c3c; }
+    .status-msg.success { color: var(--green); }
+
+    .fields-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; }
+    .field-group { padding: 14px 18px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .field-group:last-child { border-right: none; }
+    .field-label { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+    .field-input {
+      width: 100%; border: none; border-bottom: 2px solid var(--border); padding: 4px 0;
+      font-size: 14px; font-family: 'Roboto Mono', monospace; font-weight: 500; color: var(--text);
+      background: transparent; outline: none; transition: border-color 0.15s;
+    }
+    .field-input:focus { border-bottom-color: var(--sky); }
+
+    .table-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead tr { background: var(--navy); color: white; }
+    thead th { padding: 10px 12px; text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; white-space: nowrap; }
+    thead th.center { text-align: center; }
+    tbody tr { border-bottom: 1px solid var(--border); }
+    tbody tr:nth-child(even) { background: var(--row-alt); }
+    tbody tr:hover { background: #e8f0fb; }
+    tbody tr.packed-row { background: #e8f8f0 !important; }
+    tbody td { padding: 8px 12px; vertical-align: middle; }
+    tbody td.center { text-align: center; }
+
+    .td-input { width: 100%; border: none; background: transparent; font-family: 'Inter', sans-serif; font-size: 13px; color: var(--text); outline: none; padding: 2px 0; }
+    .td-input:focus { border-bottom: 1.5px solid var(--sky); }
+    .num-input { width: 50px; border: none; background: transparent; font-family: 'Roboto Mono', monospace; font-size: 13px; font-weight: 500; color: var(--text); outline: none; text-align: center; }
+    .num-input:focus { border-bottom: 1.5px solid var(--sky); }
+
+    .check-cell { display: flex; justify-content: center; align-items: center; }
+    .check-box { width: 22px; height: 22px; border: 2px solid var(--border); border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; flex-shrink: 0; }
+    .check-box.checked { background: var(--green); border-color: var(--green); }
+    .check-box.checked::after { content: '✓'; color: white; font-size: 13px; font-weight: 700; }
+
+    .add-row-btn { margin: 14px 18px; background: transparent; border: 2px dashed var(--border); color: var(--muted); padding: 8px 18px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.15s; width: calc(100% - 36px); }
+    .add-row-btn:hover { border-color: var(--sky); color: var(--sky); }
+
+    .totals-bar { display: flex; gap: 24px; padding: 14px 20px; background: var(--navy); color: white; font-size: 13px; align-items: center; flex-wrap: wrap; }
+    .total-item { display: flex; gap: 8px; align-items: center; }
+    .total-label { color: var(--sky); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .total-value { font-family: 'Roboto Mono', monospace; font-weight: 700; font-size: 16px; }
+    .progress-bar-wrap { flex: 1; min-width: 120px; }
+    .progress-bar-bg { background: rgba(255,255,255,0.2); border-radius: 99px; height: 6px; overflow: hidden; }
+    .progress-bar-fill { background: var(--yellow); height: 100%; border-radius: 99px; transition: width 0.3s; }
+    .progress-label { font-size: 11px; color: var(--sky); margin-bottom: 4px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+
+    .notes-area { width: 100%; border: none; padding: 14px 18px; font-family: 'Inter', sans-serif; font-size: 13px; color: var(--text); resize: vertical; min-height: 80px; outline: none; background: white; }
+    .print-tip { text-align: center; color: var(--muted); font-size: 12px; margin-top: 8px; }
+
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 13px; }
+    .empty-state .icon { font-size: 32px; margin-bottom: 10px; }
+  }
+
+  /* PRINT */
+  @media print {
+    body { background: white; font-size: 11px; }
+    .screen-header, .save-btn, .add-row-btn, .print-tip, .group-bar, .status-msg { display: none !important; }
+    .container { max-width: 100%; padding: 0; margin: 0; }
+    .print-header { display: flex !important; align-items: center; justify-content: space-between; border-bottom: 3px solid #1B3172; padding-bottom: 10px; margin-bottom: 14px; }
+    .print-logo { font-size: 22px; font-weight: 800; color: #1B3172; letter-spacing: 1px; }
+    .print-logo span { color: #29ABE2; }
+    .print-title { font-size: 13px; font-weight: 700; color: #1B3172; text-align: right; }
+    .print-subtitle { font-size: 10px; color: #6b7a99; }
+    .card { border: 1px solid #ccc; margin-bottom: 12px; border-radius: 4px; overflow: hidden; }
+    .card-header { background: #1B3172 !important; color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 6px 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+    .fields-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; }
+    .field-group { padding: 8px 12px; border-right: 1px solid #ccc; border-bottom: 1px solid #ccc; }
+    .field-label { font-size: 8px; font-weight: 700; color: #6b7a99; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 3px; }
+    .field-input { font-size: 12px; font-weight: 600; border: none; border-bottom: 1px solid #ccc; width: 100%; padding: 2px 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 10px; }
+    thead tr { background: #1B3172 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    thead th { color: white !important; padding: 6px 8px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; text-align: left; }
+    thead th.center { text-align: center; }
+    tbody tr { border-bottom: 1px solid #ddd; }
+    tbody tr:nth-child(even) { background: #f5f8fc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    tbody tr.packed-row { background: #e8f8f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    tbody td { padding: 5px 8px; }
+    tbody td.center { text-align: center; }
+    .td-input, .num-input { border: none; background: transparent; font-size: 10px; width: 100%; }
+    .check-box { width: 14px; height: 14px; border: 1.5px solid #999; border-radius: 2px; display: inline-flex; align-items: center; justify-content: center; margin: 0 auto; }
+    .check-box.checked { background: #2ecc71 !important; border-color: #2ecc71 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .check-box.checked::after { content: '✓'; color: white; font-size: 9px; font-weight: 700; }
+    .check-cell { display: flex; justify-content: center; }
+    .totals-bar { display: flex; gap: 20px; padding: 8px 12px; background: #1B3172 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; color: white !important; }
+    .total-label { color: #29ABE2 !important; font-size: 9px; font-weight: 700; text-transform: uppercase; }
+    .total-value { font-weight: 700; font-size: 13px; }
+    .progress-bar-wrap { display: none; }
+    .notes-area { padding: 8px 12px; font-size: 10px; min-height: 40px; border: none; }
+    .empty-state { display: none; }
+  }
+
+  .print-header { display: none; }
+</style>
+</head>
+<body>
+
+<div class="screen-header">
+  <div class="logo-area">
+    <div class="logo-box">PAC</div>
+    <div>
+      <div class="logo-title">Pacific Air Cargo</div>
+      <div class="logo-sub">Container Pack Checklist</div>
+    </div>
+  </div>
+  <button class="save-btn" onclick="window.print()">⬇ Save as PDF</button>
+</div>
+
+<div class="container">
+
+  <div class="print-header">
+    <div class="print-logo">PACIFIC <span>AIR CARGO</span></div>
+    <div>
+      <div class="print-title">Container Pack Checklist</div>
+      <div class="print-subtitle" id="print-group-name"></div>
+    </div>
+  </div>
+
+  <!-- GROUP SELECTOR -->
+  <div class="card">
+    <div class="card-header">Select Monday.com Group</div>
+    <div class="group-bar">
+      <span class="group-label">Group</span>
+      <select class="group-select" id="group-select">
+        <option value="">Loading groups...</option>
+      </select>
+      <button class="load-btn" id="load-btn" onclick="loadGroup()" disabled>Load Freight</button>
+    </div>
+    <div class="status-msg" id="status-msg"></div>
+  </div>
+
+  <!-- CONTAINER DETAILS -->
+  <div class="card">
+    <div class="card-header">Container Details</div>
+    <div class="fields-grid">
+      <div class="field-group">
+        <div class="field-label">Destination</div>
+        <input class="field-input" id="dest" type="text" placeholder="e.g. POM">
+      </div>
+      <div class="field-group">
+        <div class="field-label">Container #</div>
+        <input class="field-input" id="cont" type="text" placeholder="e.g. C24210">
+      </div>
+      <div class="field-group">
+        <div class="field-label">Container Size</div>
+        <input class="field-input" id="size" type="text" placeholder="e.g. 20FT">
+      </div>
+      <div class="field-group">
+        <div class="field-label">Seal #</div>
+        <input class="field-input" id="seal" type="text" placeholder="Seal number">
+      </div>
+      <div class="field-group">
+        <div class="field-label">Tare Weight</div>
+        <input class="field-input" id="tare" type="text" placeholder="kg">
+      </div>
+      <div class="field-group">
+        <div class="field-label">Date Packed</div>
+        <input class="field-input" id="date" type="text" placeholder="DD/MM/YYYY">
+      </div>
+    </div>
+  </div>
+
+  <!-- FREIGHT TABLE -->
+  <div class="card">
+    <div class="card-header">Freight Items</div>
+    <div class="table-scroll">
+      <table id="freight-table">
+        <thead>
+          <tr>
+            <th style="width:40px">#</th>
+            <th>Shipment / Sender</th>
+            <th>Internal ID</th>
+            <th>Receiver</th>
+            <th>Location</th>
+            <th class="center" style="width:60px">PCS</th>
+            <th>Piece Breakdown</th>
+            <th class="center" style="width:70px">Stickered</th>
+            <th class="center" style="width:70px">Packed</th>
+          </tr>
+        </thead>
+        <tbody id="freight-body">
+          <tr>
+            <td colspan="9">
+              <div class="empty-state">
+                <div class="icon">📦</div>
+                Select a group above and tap Load Freight
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <button class="add-row-btn" onclick="addRow()">+ Add Row</button>
+    <div class="totals-bar">
+      <div class="total-item"><span class="total-label">Total PCS</span><span class="total-value" id="total-pcs">0</span></div>
+      <div class="total-item"><span class="total-label">Packed</span><span class="total-value" id="total-packed">0</span></div>
+      <div class="total-item"><span class="total-label">Remaining</span><span class="total-value" id="total-remaining">0</span></div>
+      <div class="progress-bar-wrap">
+        <div class="progress-label">Pack Progress</div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTES -->
+  <div class="card">
+    <div class="card-header">Notes</div>
+    <textarea class="notes-area" placeholder="Any additional notes about this container pack..."></textarea>
+  </div>
+
+  <div class="print-tip">Tap "Save as PDF" to export — choose Save to Files or Print from the share sheet</div>
+
+</div>
+
+<script>
+  const API_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjY1NTA2MjcxMCwiYWFpIjoxMSwidWlkIjo0Mjk5NTY4OSwiaWFkIjoiMjAyNi0wNS0wN1QwMzozMDo0Ny4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MTY2NzY4OTQsInJnbiI6InVzZTEifQ.Aju0mNGNOKtHfSNkYp_uL4_zVuHMXVIZ6JHdWClEwPQ';
+  const BOARD_ID = '8043216829';
+  let rowCount = 0;
+
+  async function mondayQuery(query) {
+    const res = await fetch('https://api.monday.com/v2', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': API_TOKEN,
+        'API-Version': '2024-01'
+      },
+      body: JSON.stringify({ query })
+    });
+    return res.json();
+  }
+
+  function setStatus(msg, type = '') {
+    const el = document.getElementById('status-msg');
+    el.textContent = msg;
+    el.className = 'status-msg' + (type ? ' ' + type : '');
+  }
+
+  // Load groups on page load
+  async function loadGroups() {
+    setStatus('Loading groups from Monday.com...');
+    try {
+      const data = await mondayQuery(`{ boards(ids: ${BOARD_ID}) { groups { id title } } }`);
+      const groups = data?.data?.boards?.[0]?.groups;
+      if (!groups || groups.length === 0) {
+        setStatus('No groups found on this board.', 'error');
+        return;
+      }
+      const select = document.getElementById('group-select');
+      select.innerHTML = '<option value="">— Choose a group —</option>';
+      groups.forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g.id;
+        opt.textContent = g.title;
+        select.appendChild(opt);
+      });
+      document.getElementById('load-btn').disabled = false;
+      setStatus(`${groups.length} groups loaded. Select one and tap Load Freight.`, 'success');
+    } catch (e) {
+      setStatus('Could not connect to Monday.com. Check your connection.', 'error');
+    }
+  }
+
+  async function loadGroup() {
+    const select = document.getElementById('group-select');
+    const groupId = select.value;
+    const groupName = select.options[select.selectedIndex]?.text;
+    if (!groupId) { setStatus('Please select a group first.', 'error'); return; }
+
+    setStatus('Loading freight items...');
+    document.getElementById('load-btn').disabled = true;
+
+    try {
+      const data = await mondayQuery(`{
+        boards(ids: ${BOARD_ID}) {
+          groups(ids: "${groupId}") {
+            title
+            items_page(limit: 100) {
+              items {
+                name
+                column_values {
+                  id
+                  text
+                  column { title }
+                }
+              }
+            }
+          }
+        }
+      }`);
+
+      const group = data?.data?.boards?.[0]?.groups?.[0];
+      const items = group?.items_page?.items;
+
+      if (!items || items.length === 0) {
+        setStatus('No items found in this group.', 'error');
+        document.getElementById('load-btn').disabled = false;
+        return;
+      }
+
+      // Clear existing rows
+      document.getElementById('freight-body').innerHTML = '';
+      rowCount = 0;
+
+      items.forEach(item => {
+        // Map column values by title
+        const cols = {};
+        item.column_values.forEach(cv => {
+          if (cv.column?.title) cols[cv.column.title.toLowerCase()] = cv.text || '';
+        });
+
+        addRow({
+          sender: item.name,
+          id: cols['check in #'] || cols['internal id'] || cols['shipment #'] || cols['id'] || '',
+          receiver: cols['receiver'] || cols['consignee'] || '',
+          loc: cols['loc'] || cols['location'] || '',
+          pcs: cols['pcs'] || cols['pieces'] || '',
+          breakdown: cols['piece breakdown'] || cols['breakdown'] || ''
+        });
+      });
+
+      document.getElementById('print-group-name').textContent = groupName;
+      setStatus(`✓ ${items.length} items loaded from "${groupName}"`, 'success');
+    } catch (e) {
+      setStatus('Error loading items. Try again.', 'error');
+    }
+
+    document.getElementById('load-btn').disabled = false;
+  }
+
+  function addRow(data = {}) {
+    rowCount++;
+    const tbody = document.getElementById('freight-body');
+    const tr = document.createElement('tr');
+    tr.id = `row-${rowCount}`;
+    const rid = rowCount;
+    tr.innerHTML = `
+      <td style="color:var(--muted);font-size:11px;font-weight:600;text-align:center">${rid}</td>
+      <td><input class="td-input" type="text" value="${data.sender||''}" placeholder="Sender name"></td>
+      <td><input class="td-input" type="text" value="${data.id||''}" placeholder="Internal ID" style="font-family:'Roboto Mono',monospace"></td>
+      <td><input class="td-input" type="text" value="${data.receiver||''}" placeholder="Receiver"></td>
+      <td><input class="td-input" type="text" value="${data.loc||''}" placeholder="e.g. D4"></td>
+      <td><input class="num-input" type="number" min="0" value="${data.pcs||''}" placeholder="0" oninput="updateTotals()"></td>
+      <td><input class="td-input" type="text" value="${data.breakdown||''}" placeholder="e.g. 2 ctn, 1 plt"></td>
+      <td class="center"><div class="check-cell"><div class="check-box" onclick="toggleCheck(this)"></div></div></td>
+      <td class="center"><div class="check-cell"><div class="check-box packed-check" onclick="togglePackedCheck(this, ${rid})"></div></div></td>
+    `;
+    tbody.appendChild(tr);
+    updateTotals();
+  }
+
+  function toggleCheck(el) { el.classList.toggle('checked'); }
+
+  function togglePackedCheck(el, rowId) {
+    el.classList.toggle('checked');
+    const row = document.getElementById(`row-${rowId}`);
+    if (row) row.classList.toggle('packed-row', el.classList.contains('checked'));
+    updateTotals();
+  }
+
+  function updateTotals() {
+    let totalPcs = 0, packedPcs = 0;
+    document.getElementById('freight-body').querySelectorAll('tr').forEach(row => {
+      const pcsInput = row.querySelector('.num-input');
+      const packedCheck = row.querySelector('.packed-check');
+      const pcs = parseInt(pcsInput?.value) || 0;
+      totalPcs += pcs;
+      if (packedCheck?.classList.contains('checked')) packedPcs += pcs;
+    });
+    document.getElementById('total-pcs').textContent = totalPcs;
+    document.getElementById('total-packed').textContent = packedPcs;
+    document.getElementById('total-remaining').textContent = totalPcs - packedPcs;
+    const pct = totalPcs > 0 ? Math.round((packedPcs / totalPcs) * 100) : 0;
+    document.getElementById('progress-fill').style.width = pct + '%';
+  }
+
+  // Pre-fill today's date
+  document.getElementById('date').value = new Date().toLocaleDateString('en-AU');
+
+  // Kick off group load
+  loadGroups();
+</script>
+</body>
+</html>
