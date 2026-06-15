@@ -451,10 +451,13 @@
     if (!row) return 0;
     const breakdown = row.querySelector('.breakdown-input')?.value?.trim() || '';
     if (breakdown) {
-      // Count total pieces from breakdown: sum all numbers found in the string
+      // Sum all numbers found in the breakdown string e.g. "2 ctn, 1 plt" = 3
       const nums = breakdown.match(/\d+/g);
-      if (nums) return nums.reduce((a, b) => a + parseInt(b), 0);
+      if (nums && nums.length > 0) {
+        return nums.reduce((a, b) => a + parseInt(b), 0);
+      }
     }
+    // Fall back to PCS only if breakdown is empty
     return parseInt(row.querySelector('.num-input')?.value) || 0;
   }
 
@@ -479,8 +482,8 @@
       <td><input class="td-input" type="text" value="${data.id||''}" placeholder="Internal ID" style="font-family:'Roboto Mono',monospace;font-size:12px"></td>
       <td><input class="td-input" type="text" value="${data.receiver||''}" placeholder="Receiver"></td>
       <td><input class="td-input" type="text" value="${data.loc||''}" placeholder="e.g. D4"></td>
-      <td><input class="num-input" type="number" min="0" value="${data.pcs||''}" placeholder="0" oninput="updateTotals(); recheckDone(${rid})"></td>
-      <td><input class="td-input breakdown-input" type="text" value="${data.breakdown||''}" placeholder="e.g. 2 ctn, 1 plt" oninput="recheckDone(${rid})"></td>
+      <td><input class="num-input" type="number" min="0" value="${data.pcs||''}" placeholder="0" data-rid="${rid}" oninput="updateTotals(); recheckDone(parseInt(this.dataset.rid))"></td>
+      <td><input class="td-input breakdown-input" type="text" value="${data.breakdown||''}" placeholder="e.g. 2 ctn, 1 plt" data-rid="${rid}" oninput="recheckDone(parseInt(this.dataset.rid))"></td>
       <td class="center"><div class="check-cell"><div class="check-box" onclick="this.classList.toggle('checked')"></div></div></td>
       <td class="center">${buildTallyHTML(0, rid)}</td>
     `;
