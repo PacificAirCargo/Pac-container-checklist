@@ -193,7 +193,8 @@
   <div class="card">
     <div class="card-header">Freight Items</div>
     <div style="display:flex; justify-content:flex-end; padding:10px 18px 0;" id="add-plt-wrap" style="display:none">
-      <button class="add-plt-btn" onclick="addPltColumn()">+ Add PLT Column</button>
+      <button class="add-plt-btn" onclick="addPltColumn()">+ Add PLT</button>
+      <button class="add-plt-btn" onclick="removePltColumn()" style="border-color:#e74c3c;color:#e74c3c;margin-left:6px">− Remove PLT</button>
     </div>
     <div class="table-scroll">
       <table id="freight-table">
@@ -223,6 +224,7 @@ let rowCount = 0;
 let tallyData = {};
 let currentMode = 'sea';
 let pltCount = 1; // for air mode
+let pltKgData = { 1: 0 }; // tare weight per PLT entered by user
 
 async function mondayQuery(query) {
   const res = await fetch('https://api.monday.com/v2', {
@@ -298,11 +300,12 @@ function renderTableHeaders() {
       <th style="width:32px">#</th>
       <th>Shipment #</th>
       <th>Internal ID</th>
+      <th>Receiver</th>
       <th>Location</th>
       <th class="center" style="width:50px">PCE's</th>
       <th class="center" style="width:64px">Lithium</th>
       <th class="center" style="width:64px">Loose</th>
-      <th class="center" style="width:120px" id="plt-th-1"><div class="plt-header">PLT 1</div></th>`;
+      <th class="center" style="width:140px" id="plt-th-1"><div class="plt-header">PLT 1</div><div style="display:flex;gap:2px;margin-top:3px"><div style="flex:1;font-size:9px;color:var(--sky);text-align:center">PLT KG</div><div style="flex:1;font-size:9px;color:var(--sky);text-align:center">TOTAL KG</div></div></th>`;
   }
 }
 
@@ -330,24 +333,91 @@ function clearRows() {
 // ── PLT COLUMNS (AIR) ───────────────────────────────────────────
 function addPltColumn() {
   pltCount++;
-  // Add header
+  const p = pltCount;
+  // Add header with PLT KG / TOTAL KG sub-labels
   const th = document.createElement('th');
   th.className = 'center';
-  th.style.width = '120px';
-  th.id = `plt-th-${pltCount}`;
-  th.innerHTML = `<div class="plt-header">PLT ${pltCount}</div>`;
+  th.style.width = '140px';
+  th.id = `plt-th-${p}`;
+  th.innerHTML = `<div class="plt-header">PLT ${p}</div><div style="display:flex;gap:2px;margin-top:3px"><div style="flex:1;font-size:9px;color:var(--sky);text-align:center">PLT KG</div><div style="flex:1;font-size:9px;color:var(--sky);text-align:center">TOTAL KG</div></div>`;
   document.getElementById('thead-row').appendChild(th);
+  // pltKgData for this plt
+  pltKgData[p] = 0;
   // Add cell to every existing row
   document.getElementById('freight-body').querySelectorAll('tr[id^="row-"]').forEach(row => {
     const rid = parseInt(row.id.replace('row-',''));
-    const key = `${rid}-plt${pltCount}`;
+    const key = `${rid}-plt${p}`;
     tallyData[key] = 0;
     const td = document.createElement('td');
     td.className = 'center';
-    td.id = `plt-cell-${rid}-${pltCount}`;
-    td.innerHTML = buildTallyHTML(0, rid, pltCount);
+    td.id = `plt-cell-${rid}-${p}`;
+    td.innerHTML = buildAirPltCellHTML(rid, p, 0, '');
     row.appendChild(td);
   });
+  updateAirWeights();
+}
+
+function removePltColumn() {
+  if (pltCount <= 1) return;
+  // Remove header
+  const th = document.getElementById(`plt-th-${pltCount}`);
+  if (th) th.remove();
+  // Remove cells from all rows
+  document.getElementById('freight-body').querySelectorAll('tr[id^="row-"]').forEach(row => {
+    const cell = document.getElementById(`plt-cell-${parseInt(row.id.replace('row-',''))}-${pltCount}`);
+    if (cell) cell.remove();
+  });
+  // Clean up data
+  delete pltKgData[pltCount];
+  document.getElementById('freight-body').querySelectorAll('tr[id^="row-"]').forEach(row => {
+    const rid = parseInt(row.id.replace('row-',''));
+    delete tallyData[`${rid}-plt${pltCount}`];
+  });
+  pltCount--;
+  updateAirWeights();
+}
+
+// ── AIR PLT CELL & WEIGHTS ─────────────────────────────────────
+function buildAirPltCellHTML(rowId, pltNum, tallyN, freightKg) {
+  return `
+    <div>
+      <div style="display:flex;gap:2px;margin-bottom:4px">
+        <input type="number" step="0.01" placeholder="PLT kg" data-plt="${pltNum}"
+          style="flex:1;width:0;border:none;border-bottom:1.5px solid var(--border);background:transparent;font-size:11px;font-family:'Roboto Mono',monospace;text-align:center;outline:none;padding:2px"
+          id="pltkg-${rowId}-${pltNum}" oninput="updateAirWeights()" title="Pallet tare weight">
+        <div style="flex:1;font-size:11px;font-family:'Roboto Mono',monospace;text-align:center;padding:2px;color:var(--navy);font-weight:600;border-bottom:1.5px solid var(--border)" id="totalkg-${rowId}-${pltNum}" title="Total = PLT kg + freight kg">—</div>
+      </div>
+      ${buildTallyHTML(tallyN, rowId, pltNum)}
+    </div>`;
+}
+
+function updateAirWeights() {
+  // For each row, for each PLT, total = pltKgInput + freightKg from that row
+  document.getElementById('freight-body').querySelectorAll('tr[id^="row-"]').forEach(row => {
+    const rid = parseInt(row.id.replace('row-',''));
+    const freightKg = parseFloat(row.dataset.freightkg || 0) || 0;
+    for (let p=1; p<=pltCount; p++) {
+      const pltInput = document.getElementById(`pltkg-${rid}-${p}`);
+      const totalEl = document.getElementById(`totalkg-${rid}-${p}`);
+      if (!pltInput || !totalEl) continue;
+      const pltKg = parseFloat(pltInput.value) || 0;
+      const total = pltKg + freightKg;
+      totalEl.textContent = (pltKg || freightKg) ? total.toFixed(2) + ' kg' : '—';
+    }
+  });
+}
+
+function checkAirRowDone(rowId) {
+  const row = document.getElementById(`row-${rowId}`);
+  if (!row) return;
+  const pcs = parseInt(row.querySelector('.num-input')?.value) || 0;
+  if (pcs === 0) { row.classList.remove('done-row'); return; }
+  // Row is done if any PLT tally >= pcs
+  let done = false;
+  for (let p=1; p<=pltCount; p++) {
+    if ((tallyData[`${rowId}-plt${p}`]||0) >= pcs) { done = true; break; }
+  }
+  row.classList.toggle('done-row', done);
 }
 
 // ── TALLY ───────────────────────────────────────────────────────
@@ -390,6 +460,7 @@ function changeTally(rowId, pltNum, delta) {
   const n = tallyData[key];
   document.getElementById(`tm-${rowId}-${pltNum}`).innerHTML = tallyVisual(n)||'—';
   document.getElementById(`tc-${rowId}-${pltNum}`).textContent = n>0?n+' pcs':'';
+  checkAirRowDone(rowId);
   updateTotals();
 }
 
@@ -508,20 +579,27 @@ function addRow(data={}) {
       <td class="center">${buildSeaTallyHTML(0,rid)}</td>`;
   } else {
     // Air mode: PLT columns
+    const freightKg = parseFloat(data.kg||0)||0;
     let pltCells = '';
     for (let p=1; p<=pltCount; p++) {
       tallyData[`${rid}-plt${p}`] = 0;
-      pltCells += `<td class="center" id="plt-cell-${rid}-${p}">${buildTallyHTML(0,rid,p)}</td>`;
+      pltCells += `<td class="center" id="plt-cell-${rid}-${p}">${buildAirPltCellHTML(rid,p,0,freightKg)}</td>`;
     }
+    tr.dataset.freightkg = freightKg;
     tr.innerHTML = `
       <td style="color:var(--muted);font-size:11px;font-weight:600;text-align:center">${rid}</td>
       <td><input class="td-input" type="text" value="${data.sender||''}" placeholder="Shipment #"></td>
       <td><input class="td-input" type="text" value="${data.id||''}" placeholder="Internal ID" style="font-family:'Roboto Mono',monospace;font-size:12px"></td>
+      <td><input class="td-input" type="text" value="${data.receiver||''}" placeholder="Receiver"></td>
       <td><input class="td-input" type="text" value="${data.loc||''}" placeholder="e.g. R4"></td>
-      <td><input class="num-input" type="number" min="0" value="${data.pcs||''}" placeholder="0" oninput="updateTotals()"></td>
+      <td><input class="num-input" type="number" min="0" value="${data.pcs||''}" placeholder="0" data-rid="${rid}" oninput="updateTotals(); checkAirRowDone(parseInt(this.dataset.rid))"></td>
       <td class="center"><div class="check-cell"><div class="check-box" onclick="this.classList.toggle('checked')"></div></div></td>
       <td class="center"><div class="check-cell"><div class="check-box" onclick="this.classList.toggle('checked')"></div></div></td>
       ${pltCells}`;
+    // Re-attach PLT cells properly after innerHTML wipe
+    tr.querySelectorAll('td[id^="plt-cell-"]').forEach(td => {});
+    // Store freight kg on tr for weight calc
+    setTimeout(() => { tr.dataset.freightkg = freightKg; updateAirWeights(); }, 0);
   }
 
   tbody.appendChild(tr);
