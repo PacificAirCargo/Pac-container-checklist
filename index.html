@@ -280,6 +280,7 @@ async function loadGroup() {
     });
     document.getElementById('print-group-name').textContent = gname;
     setStatus(`✓ ${items.length} items loaded from "${gname}"`,'success');
+    if (currentMode==='air') updateFooter();
   } catch(e) { setStatus('Error loading items.','error'); console.error(e); }
   document.getElementById('load-btn').disabled = false;
 }
@@ -560,6 +561,7 @@ function addRow(data={}) {
   }
   tbody.appendChild(tr);
   updateTotals();
+  if (currentMode==='air') updateFooter();
 }
 
 // ── TOTALS ───────────────────────────────────────────────────────
