@@ -442,13 +442,28 @@
     document.getElementById(`tally-marks-${rowId}`).innerHTML = visual || '—';
     document.getElementById(`tally-count-${rowId}`).textContent = n > 0 ? n + ' pcs' : '';
 
-    // Highlight row if tally matches PCS
-    const row = document.getElementById(`row-${rowId}`);
-    const pcsInput = row?.querySelector('.num-input');
-    const pcs = parseInt(pcsInput?.value) || 0;
-    if (row) row.classList.toggle('done-row', n > 0 && pcs > 0 && n >= pcs);
-
+    recheckDone(rowId);
     updateTotals();
+  }
+
+  function getTarget(rowId) {
+    const row = document.getElementById(`row-${rowId}`);
+    if (!row) return 0;
+    const breakdown = row.querySelector('.breakdown-input')?.value?.trim() || '';
+    if (breakdown) {
+      // Count total pieces from breakdown: sum all numbers found in the string
+      const nums = breakdown.match(/\d+/g);
+      if (nums) return nums.reduce((a, b) => a + parseInt(b), 0);
+    }
+    return parseInt(row.querySelector('.num-input')?.value) || 0;
+  }
+
+  function recheckDone(rowId) {
+    const row = document.getElementById(`row-${rowId}`);
+    if (!row) return;
+    const target = getTarget(rowId);
+    const n = tallyData[rowId] || 0;
+    row.classList.toggle('done-row', n > 0 && target > 0 && n >= target);
   }
 
   function addRow(data = {}) {
@@ -464,8 +479,8 @@
       <td><input class="td-input" type="text" value="${data.id||''}" placeholder="Internal ID" style="font-family:'Roboto Mono',monospace;font-size:12px"></td>
       <td><input class="td-input" type="text" value="${data.receiver||''}" placeholder="Receiver"></td>
       <td><input class="td-input" type="text" value="${data.loc||''}" placeholder="e.g. D4"></td>
-      <td><input class="num-input" type="number" min="0" value="${data.pcs||''}" placeholder="0" oninput="updateTotals()"></td>
-      <td><input class="td-input" type="text" value="${data.breakdown||''}" placeholder="e.g. 2 ctn, 1 plt"></td>
+      <td><input class="num-input" type="number" min="0" value="${data.pcs||''}" placeholder="0" oninput="updateTotals(); recheckDone(${rid})"></td>
+      <td><input class="td-input breakdown-input" type="text" value="${data.breakdown||''}" placeholder="e.g. 2 ctn, 1 plt" oninput="recheckDone(${rid})"></td>
       <td class="center"><div class="check-cell"><div class="check-box" onclick="this.classList.toggle('checked')"></div></div></td>
       <td class="center">${buildTallyHTML(0, rid)}</td>
     `;
@@ -479,7 +494,6 @@
       const pcsInput = row.querySelector('.num-input');
       const pcs = parseInt(pcsInput?.value) || 0;
       totalPcs += pcs;
-      // Get tally for this row
       const rid = parseInt(row.id?.replace('row-', ''));
       if (rid && tallyData[rid]) packedPcs += tallyData[rid];
     });
