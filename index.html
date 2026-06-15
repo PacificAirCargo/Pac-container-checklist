@@ -3,152 +3,142 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PAC Container Pack Checklist</title>
+<title>PAC Pack Checklist</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap');
-
-  :root {
-    --navy: #1B3172;
-    --sky: #29ABE2;
-    --yellow: #F5C518;
-    --white: #ffffff;
-    --light: #F4F7FB;
-    --border: #D0DCF0;
-    --text: #1a1a2e;
-    --muted: #6b7a99;
-    --green: #2ecc71;
-    --row-alt: #f0f5fb;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Inter', sans-serif; background: var(--light); color: var(--text); min-height: 100vh; }
+  :root { --navy:#1B3172; --sky:#29ABE2; --yellow:#F5C518; --light:#F4F7FB; --border:#D0DCF0; --text:#1a1a2e; --muted:#6b7a99; --green:#2ecc71; --row-alt:#f0f5fb; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Inter',sans-serif; background:var(--light); color:var(--text); min-height:100vh; }
 
   @media screen {
-    .screen-header {
-      background: var(--navy); padding: 16px 24px;
-      display: flex; align-items: center; justify-content: space-between; gap: 16px;
-    }
-    .logo-area { display: flex; align-items: center; gap: 12px; }
-    .logo-box { background: var(--sky); color: white; font-weight: 700; font-size: 13px; letter-spacing: 1.5px; padding: 6px 10px; border-radius: 4px; }
-    .logo-title { color: white; font-size: 15px; font-weight: 600; }
-    .logo-sub { color: var(--sky); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
-    .save-btn { background: var(--yellow); color: var(--navy); border: none; padding: 10px 20px; border-radius: 6px; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
-    .save-btn:hover { opacity: 0.85; }
+    .screen-header { background:var(--navy); padding:16px 24px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+    .logo-area { display:flex; align-items:center; gap:12px; }
+    .logo-box { background:var(--sky); color:white; font-weight:700; font-size:13px; letter-spacing:1.5px; padding:6px 10px; border-radius:4px; }
+    .logo-title { color:white; font-size:15px; font-weight:600; }
+    .logo-sub { color:var(--sky); font-size:11px; font-weight:500; letter-spacing:0.5px; text-transform:uppercase; }
+    .header-right { display:flex; align-items:center; gap:12px; }
+    .mode-toggle { display:flex; border-radius:8px; overflow:hidden; border:2px solid rgba(255,255,255,0.2); }
+    .mode-btn { padding:8px 18px; font-size:13px; font-weight:700; cursor:pointer; border:none; background:transparent; color:rgba(255,255,255,0.6); letter-spacing:0.5px; transition:all 0.2s; }
+    .mode-btn.active { background:var(--yellow); color:var(--navy); }
+    .save-btn { background:var(--yellow); color:var(--navy); border:none; padding:10px 20px; border-radius:6px; font-weight:700; font-size:13px; cursor:pointer; display:flex; align-items:center; gap:6px; }
+    .save-btn:hover { opacity:0.85; }
 
-    .container { max-width: 1050px; margin: 24px auto; padding: 0 16px 40px; }
-    .card { background: white; border-radius: 10px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 20px; }
-    .card-header { background: var(--navy); color: white; padding: 14px 20px; font-weight: 600; font-size: 13px; letter-spacing: 0.5px; text-transform: uppercase; }
+    .container { max-width:1100px; margin:24px auto; padding:0 16px 40px; }
+    .card { background:white; border-radius:10px; border:1px solid var(--border); overflow:hidden; margin-bottom:20px; }
+    .card-header { background:var(--navy); color:white; padding:14px 20px; font-weight:600; font-size:13px; letter-spacing:0.5px; text-transform:uppercase; }
 
-    .group-bar { display: flex; align-items: center; gap: 12px; padding: 14px 18px; flex-wrap: wrap; }
-    .group-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; white-space: nowrap; }
-    .group-select { flex: 1; min-width: 200px; border: 2px solid var(--border); border-radius: 6px; padding: 8px 12px; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; color: var(--text); background: white; outline: none; cursor: pointer; }
-    .group-select:focus { border-color: var(--sky); }
-    .load-btn { background: var(--sky); color: white; border: none; padding: 9px 18px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; white-space: nowrap; }
-    .load-btn:hover { opacity: 0.85; }
-    .load-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .status-msg { font-size: 12px; color: var(--muted); padding: 0 18px 12px; min-height: 20px; }
-    .status-msg.error { color: #e74c3c; }
-    .status-msg.success { color: var(--green); }
+    .group-bar { display:flex; align-items:center; gap:12px; padding:14px 18px; flex-wrap:wrap; }
+    .group-label { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; white-space:nowrap; }
+    .group-select { flex:1; min-width:200px; border:2px solid var(--border); border-radius:6px; padding:8px 12px; font-family:'Inter',sans-serif; font-size:14px; font-weight:500; color:var(--text); background:white; outline:none; cursor:pointer; }
+    .group-select:focus { border-color:var(--sky); }
+    .load-btn { background:var(--sky); color:white; border:none; padding:9px 18px; border-radius:6px; font-weight:600; font-size:13px; cursor:pointer; white-space:nowrap; }
+    .load-btn:hover { opacity:0.85; }
+    .load-btn:disabled { opacity:0.5; cursor:not-allowed; }
+    .status-msg { font-size:12px; color:var(--muted); padding:0 18px 12px; min-height:20px; }
+    .status-msg.error { color:#e74c3c; }
+    .status-msg.success { color:var(--green); }
 
-    .fields-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; }
-    .field-group { padding: 14px 18px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-    .field-group:nth-child(3n) { border-right: none; }
-    .field-label { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
-    .field-input { width: 100%; border: none; border-bottom: 2px solid var(--border); padding: 4px 0; font-size: 14px; font-family: 'Roboto Mono', monospace; font-weight: 500; color: var(--text); background: transparent; outline: none; transition: border-color 0.15s; }
-    .field-input:focus { border-bottom-color: var(--sky); }
+    .fields-grid { display:grid; grid-template-columns:1fr 1fr 1fr; }
+    .field-group { padding:14px 18px; border-right:1px solid var(--border); border-bottom:1px solid var(--border); }
+    .field-group:nth-child(3n) { border-right:none; }
+    .field-label { font-size:10px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px; }
+    .field-input { width:100%; border:none; border-bottom:2px solid var(--border); padding:4px 0; font-size:14px; font-family:'Roboto Mono',monospace; font-weight:500; color:var(--text); background:transparent; outline:none; transition:border-color 0.15s; }
+    .field-input:focus { border-bottom-color:var(--sky); }
 
-    .table-scroll { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    thead tr { background: var(--navy); color: white; }
-    thead th { padding: 10px 12px; text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; white-space: nowrap; }
-    thead th.center { text-align: center; }
-    tbody tr { border-bottom: 1px solid var(--border); }
-    tbody tr:nth-child(even) { background: var(--row-alt); }
-    tbody tr:hover { background: #e8f0fb; }
-    tbody tr.done-row { background: #e8f8f0 !important; }
-    tbody td { padding: 8px 12px; vertical-align: middle; }
-    tbody td.center { text-align: center; }
+    .table-scroll { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    thead tr { background:var(--navy); color:white; }
+    thead th { padding:10px 10px; text-align:left; font-size:11px; font-weight:600; letter-spacing:0.5px; text-transform:uppercase; white-space:nowrap; }
+    thead th.center { text-align:center; }
+    tbody tr { border-bottom:1px solid var(--border); }
+    tbody tr:nth-child(even) { background:var(--row-alt); }
+    tbody tr:hover { background:#e8f0fb; }
+    tbody tr.done-row { background:#e8f8f0 !important; }
+    tbody td { padding:7px 10px; vertical-align:middle; }
+    tbody td.center { text-align:center; }
 
-    .td-input { width: 100%; border: none; background: transparent; font-family: 'Inter', sans-serif; font-size: 13px; color: var(--text); outline: none; padding: 2px 0; }
-    .td-input:focus { border-bottom: 1.5px solid var(--sky); }
-    .num-input { width: 55px; border: none; background: transparent; font-family: 'Roboto Mono', monospace; font-size: 13px; font-weight: 500; color: var(--text); outline: none; text-align: center; }
-    .num-input:focus { border-bottom: 1.5px solid var(--sky); }
+    .td-input { width:100%; border:none; background:transparent; font-family:'Inter',sans-serif; font-size:13px; color:var(--text); outline:none; padding:2px 0; }
+    .td-input:focus { border-bottom:1.5px solid var(--sky); }
+    .num-input { width:50px; border:none; background:transparent; font-family:'Roboto Mono',monospace; font-size:13px; font-weight:500; color:var(--text); outline:none; text-align:center; }
+    .num-input:focus { border-bottom:1.5px solid var(--sky); }
 
-    .check-cell { display: flex; justify-content: center; align-items: center; }
-    .check-box { width: 22px; height: 22px; border: 2px solid var(--border); border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; flex-shrink: 0; }
-    .check-box.checked { background: var(--green); border-color: var(--green); }
-    .check-box.checked::after { content: '✓'; color: white; font-size: 13px; font-weight: 700; }
+    .check-cell { display:flex; justify-content:center; align-items:center; }
+    .check-box { width:20px; height:20px; border:2px solid var(--border); border-radius:4px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.15s; flex-shrink:0; }
+    .check-box.checked { background:var(--green); border-color:var(--green); }
+    .check-box.checked::after { content:'✓'; color:white; font-size:12px; font-weight:700; }
 
-    /* TALLY */
-    .tally-cell { display: flex; align-items: center; gap: 8px; justify-content: center; }
-    .tally-marks { font-size: 18px; letter-spacing: 2px; min-width: 60px; text-align: center; line-height: 1; color: var(--navy); font-family: 'Roboto Mono', monospace; }
-    .tally-count { font-size: 11px; color: var(--muted); font-weight: 600; min-width: 28px; text-align: center; }
-    .tally-btn { width: 26px; height: 26px; border-radius: 50%; border: none; cursor: pointer; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; transition: all 0.15s; flex-shrink: 0; }
-    .tally-plus { background: var(--sky); color: white; }
-    .tally-plus:hover { background: var(--navy); }
-    .tally-minus { background: #eee; color: var(--muted); }
-    .tally-minus:hover { background: #ddd; }
+    .tally-cell { display:flex; align-items:center; gap:5px; justify-content:center; }
+    .tally-marks { font-size:15px; min-width:44px; text-align:center; line-height:1; color:var(--navy); font-family:'Roboto Mono',monospace; }
+    .tally-count { font-size:10px; color:var(--muted); font-weight:600; min-width:24px; text-align:center; }
+    .tally-btn { width:24px; height:24px; border-radius:50%; border:none; cursor:pointer; font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:center; transition:all 0.15s; flex-shrink:0; }
+    .tally-plus { background:var(--sky); color:white; }
+    .tally-plus:hover { background:var(--navy); }
+    .tally-minus { background:#eee; color:var(--muted); }
+    .tally-minus:hover { background:#ddd; }
 
-    .add-row-btn { margin: 14px 18px; background: transparent; border: 2px dashed var(--border); color: var(--muted); padding: 8px 18px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.15s; width: calc(100% - 36px); }
-    .add-row-btn:hover { border-color: var(--sky); color: var(--sky); }
+    .add-plt-btn { margin:10px 18px; background:transparent; border:2px dashed var(--sky); color:var(--sky); padding:6px 16px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600; transition:all 0.15s; }
+    .add-plt-btn:hover { background:var(--sky); color:white; }
+    .add-row-btn { margin:14px 18px; background:transparent; border:2px dashed var(--border); color:var(--muted); padding:8px 18px; border-radius:6px; cursor:pointer; font-size:13px; font-weight:500; transition:all 0.15s; width:calc(100% - 36px); }
+    .add-row-btn:hover { border-color:var(--sky); color:var(--sky); }
 
-    .totals-bar { display: flex; gap: 24px; padding: 14px 20px; background: var(--navy); color: white; font-size: 13px; align-items: center; flex-wrap: wrap; }
-    .total-item { display: flex; gap: 8px; align-items: center; }
-    .total-label { color: var(--sky); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .total-value { font-family: 'Roboto Mono', monospace; font-weight: 700; font-size: 16px; }
-    .progress-bar-wrap { flex: 1; min-width: 120px; }
-    .progress-bar-bg { background: rgba(255,255,255,0.2); border-radius: 99px; height: 6px; overflow: hidden; }
-    .progress-bar-fill { background: var(--yellow); height: 100%; border-radius: 99px; transition: width 0.3s; }
-    .progress-label { font-size: 11px; color: var(--sky); margin-bottom: 4px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+    .totals-bar { display:flex; gap:24px; padding:14px 20px; background:var(--navy); color:white; font-size:13px; align-items:center; flex-wrap:wrap; }
+    .total-item { display:flex; gap:8px; align-items:center; }
+    .total-label { color:var(--sky); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; }
+    .total-value { font-family:'Roboto Mono',monospace; font-weight:700; font-size:16px; }
+    .progress-bar-wrap { flex:1; min-width:120px; }
+    .progress-bar-bg { background:rgba(255,255,255,0.2); border-radius:99px; height:6px; overflow:hidden; }
+    .progress-bar-fill { background:var(--yellow); height:100%; border-radius:99px; transition:width 0.3s; }
+    .progress-label { font-size:11px; color:var(--sky); margin-bottom:4px; font-weight:600; letter-spacing:0.5px; text-transform:uppercase; }
 
-    .notes-area { width: 100%; border: none; padding: 14px 18px; font-family: 'Inter', sans-serif; font-size: 13px; color: var(--text); resize: vertical; min-height: 80px; outline: none; background: white; }
-    .print-tip { text-align: center; color: var(--muted); font-size: 12px; margin-top: 8px; }
-    .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 13px; }
-    .empty-state .icon { font-size: 32px; margin-bottom: 10px; }
+    .notes-area { width:100%; border:none; padding:14px 18px; font-family:'Inter',sans-serif; font-size:13px; color:var(--text); resize:vertical; min-height:70px; outline:none; background:white; }
+    .print-tip { text-align:center; color:var(--muted); font-size:12px; margin-top:8px; }
+    .empty-state { text-align:center; padding:40px 20px; color:var(--muted); font-size:13px; }
+    .empty-state .icon { font-size:32px; margin-bottom:10px; }
+
+    .plt-header { background:#e8f0fb; color:var(--navy); font-weight:700; font-size:10px; text-align:center; padding:4px 2px; border-radius:3px; white-space:nowrap; }
   }
 
-  /* PRINT */
   @media print {
-    body { background: white; font-size: 11px; }
-    .screen-header, .save-btn, .add-row-btn, .print-tip, .group-bar, .status-msg, .tally-btn { display: none !important; }
-    .container { max-width: 100%; padding: 0; margin: 0; }
-    .print-header { display: flex !important; align-items: center; justify-content: space-between; border-bottom: 3px solid #1B3172; padding-bottom: 10px; margin-bottom: 14px; }
-    .print-logo { font-size: 22px; font-weight: 800; color: #1B3172; }
-    .print-logo span { color: #29ABE2; }
-    .print-title { font-size: 13px; font-weight: 700; color: #1B3172; text-align: right; }
-    .print-subtitle { font-size: 10px; color: #6b7a99; }
-    .card { border: 1px solid #ccc; margin-bottom: 12px; border-radius: 4px; overflow: hidden; }
-    .card-header { background: #1B3172 !important; color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 6px 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
-    .fields-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; }
-    .field-group { padding: 8px 12px; border-right: 1px solid #ccc; border-bottom: 1px solid #ccc; }
-    .field-label { font-size: 8px; font-weight: 700; color: #6b7a99; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 3px; }
-    .field-input { font-size: 12px; font-weight: 600; border: none; border-bottom: 1px solid #ccc; width: 100%; padding: 2px 0; }
-    table { width: 100%; border-collapse: collapse; font-size: 10px; }
-    thead tr { background: #1B3172 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    thead th { color: white !important; padding: 6px 8px; font-size: 9px; font-weight: 700; text-transform: uppercase; text-align: left; }
-    thead th.center { text-align: center; }
-    tbody tr { border-bottom: 1px solid #ddd; }
-    tbody tr:nth-child(even) { background: #f5f8fc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    tbody tr.done-row { background: #e8f8f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    tbody td { padding: 5px 8px; }
-    tbody td.center { text-align: center; }
-    .td-input, .num-input { border: none; background: transparent; font-size: 10px; width: 100%; }
-    .check-box { width: 14px; height: 14px; border: 1.5px solid #999; border-radius: 2px; display: inline-flex; align-items: center; justify-content: center; margin: 0 auto; }
-    .check-box.checked { background: #2ecc71 !important; border-color: #2ecc71 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .check-box.checked::after { content: '✓'; color: white; font-size: 9px; font-weight: 700; }
-    .check-cell { display: flex; justify-content: center; }
-    .tally-cell { display: flex; align-items: center; justify-content: center; gap: 4px; }
-    .tally-marks { font-size: 14px; color: #1B3172; font-family: monospace; }
-    .tally-count { font-size: 9px; color: #6b7a99; font-weight: 700; }
-    .totals-bar { display: flex; gap: 20px; padding: 8px 12px; background: #1B3172 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; color: white !important; }
-    .total-label { color: #29ABE2 !important; font-size: 9px; font-weight: 700; text-transform: uppercase; }
-    .total-value { font-weight: 700; font-size: 13px; }
-    .progress-bar-wrap { display: none; }
-    .notes-area { padding: 8px 12px; font-size: 10px; min-height: 40px; border: none; }
-    .empty-state { display: none; }
+    body { background:white; font-size:10px; }
+    .screen-header,.save-btn,.add-row-btn,.add-plt-btn,.print-tip,.group-bar,.status-msg,.tally-btn,.mode-toggle { display:none !important; }
+    .container { max-width:100%; padding:0; margin:0; }
+    .print-header { display:flex !important; align-items:center; justify-content:space-between; border-bottom:3px solid #1B3172; padding-bottom:10px; margin-bottom:14px; }
+    .print-logo { font-size:20px; font-weight:800; color:#1B3172; }
+    .print-logo span { color:#29ABE2; }
+    .print-title { font-size:12px; font-weight:700; color:#1B3172; text-align:right; }
+    .print-subtitle { font-size:10px; color:#6b7a99; }
+    .card { border:1px solid #ccc; margin-bottom:10px; border-radius:4px; overflow:hidden; }
+    .card-header { background:#1B3172 !important; color:white !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; padding:5px 10px; font-size:9px; font-weight:700; text-transform:uppercase; }
+    .fields-grid { display:grid; grid-template-columns:1fr 1fr 1fr; }
+    .field-group { padding:7px 10px; border-right:1px solid #ccc; border-bottom:1px solid #ccc; }
+    .field-label { font-size:8px; font-weight:700; color:#6b7a99; text-transform:uppercase; margin-bottom:2px; }
+    .field-input { font-size:11px; font-weight:600; border:none; border-bottom:1px solid #ccc; width:100%; padding:2px 0; }
+    table { width:100%; border-collapse:collapse; font-size:9px; }
+    thead tr { background:#1B3172 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    thead th { color:white !important; padding:5px 6px; font-size:8px; font-weight:700; text-transform:uppercase; text-align:left; }
+    thead th.center { text-align:center; }
+    tbody tr { border-bottom:1px solid #ddd; }
+    tbody tr:nth-child(even) { background:#f5f8fc !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    tbody tr.done-row { background:#e8f8f0 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    tbody td { padding:4px 6px; }
+    tbody td.center { text-align:center; }
+    .td-input,.num-input { border:none; background:transparent; font-size:9px; width:100%; }
+    .check-box { width:12px; height:12px; border:1.5px solid #999; border-radius:2px; display:inline-flex; align-items:center; justify-content:center; margin:0 auto; }
+    .check-box.checked { background:#2ecc71 !important; border-color:#2ecc71 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .check-box.checked::after { content:'✓'; color:white; font-size:8px; font-weight:700; }
+    .check-cell { display:flex; justify-content:center; }
+    .tally-cell { display:flex; align-items:center; justify-content:center; gap:2px; }
+    .tally-marks { font-size:11px; color:#1B3172; font-family:monospace; }
+    .tally-count { font-size:8px; color:#6b7a99; font-weight:700; }
+    .totals-bar { display:flex; gap:16px; padding:6px 10px; background:#1B3172 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; color:white !important; }
+    .total-label { color:#29ABE2 !important; font-size:8px; font-weight:700; text-transform:uppercase; }
+    .total-value { font-weight:700; font-size:12px; }
+    .progress-bar-wrap { display:none; }
+    .notes-area { padding:7px 10px; font-size:9px; min-height:30px; border:none; }
+    .empty-state { display:none; }
+    .plt-header { background:#e8f0fb !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; color:#1B3172 !important; font-weight:700; font-size:8px; text-align:center; padding:3px 2px; border-radius:2px; }
   }
-
-  .print-header { display: none; }
+  .print-header { display:none; }
 </style>
 </head>
 <body>
@@ -158,10 +148,16 @@
     <div class="logo-box">PAC</div>
     <div>
       <div class="logo-title">Pacific Air Cargo</div>
-      <div class="logo-sub">Container Pack Checklist</div>
+      <div class="logo-sub" id="mode-subtitle">Container Pack Checklist</div>
     </div>
   </div>
-  <button class="save-btn" onclick="window.print()">⬇ Save as PDF</button>
+  <div class="header-right">
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="btn-sea" onclick="setMode('sea')">🚢 SEA</button>
+      <button class="mode-btn" id="btn-air" onclick="setMode('air')">✈️ AIR</button>
+    </div>
+    <button class="save-btn" onclick="window.print()">⬇ Save as PDF</button>
+  </div>
 </div>
 
 <div class="container">
@@ -169,7 +165,7 @@
   <div class="print-header">
     <div class="print-logo">PACIFIC <span>AIR CARGO</span></div>
     <div>
-      <div class="print-title">Container Pack Checklist</div>
+      <div class="print-title" id="print-title">Container Pack Checklist</div>
       <div class="print-subtitle" id="print-group-name"></div>
     </div>
   </div>
@@ -179,336 +175,386 @@
     <div class="card-header">Select Monday.com Group</div>
     <div class="group-bar">
       <span class="group-label">Group</span>
-      <select class="group-select" id="group-select">
-        <option value="">Loading groups...</option>
-      </select>
+      <select class="group-select" id="group-select"><option value="">Loading groups...</option></select>
       <button class="load-btn" id="load-btn" onclick="loadGroup()" disabled>Load Freight</button>
     </div>
     <div class="status-msg" id="status-msg"></div>
   </div>
 
-  <!-- CONTAINER DETAILS -->
-  <div class="card">
-    <div class="card-header">Container Details</div>
-    <div class="fields-grid">
-      <div class="field-group">
-        <div class="field-label">Consol #</div>
-        <input class="field-input" id="consol" type="text" placeholder="e.g. BNESYD00123">
-      </div>
-      <div class="field-group">
-        <div class="field-label">Destination</div>
-        <input class="field-input" id="dest" type="text" placeholder="e.g. POM">
-      </div>
-      <div class="field-group">
-        <div class="field-label">Container #</div>
-        <input class="field-input" id="cont" type="text" placeholder="e.g. TCKU1234567">
-      </div>
-      <div class="field-group">
-        <div class="field-label">Container Size</div>
-        <input class="field-input" id="size" type="text" placeholder="e.g. 20FT">
-      </div>
-      <div class="field-group">
-        <div class="field-label">Seal #</div>
-        <input class="field-input" id="seal" type="text" placeholder="Seal number">
-      </div>
-      <div class="field-group">
-        <div class="field-label">Tare Weight</div>
-        <input class="field-input" id="tare" type="text" placeholder="kg">
-      </div>
-      <div class="field-group">
-        <div class="field-label">Date Packed</div>
-        <input class="field-input" id="date" type="text" placeholder="DD/MM/YYYY">
-      </div>
-      <div class="field-group">
-        <div class="field-label">Packed By</div>
-        <input class="field-input" id="packedby" type="text" placeholder="Name">
-      </div>
-      <div class="field-group">
-        <div class="field-label">Supervised By</div>
-        <input class="field-input" id="supervisedby" type="text" placeholder="Name">
-      </div>
+  <!-- DETAILS CARD -->
+  <div class="card" id="details-card">
+    <div class="card-header" id="details-header">Container Details</div>
+    <div class="fields-grid" id="details-grid">
+      <!-- populated by setMode() -->
     </div>
   </div>
 
   <!-- FREIGHT TABLE -->
   <div class="card">
     <div class="card-header">Freight Items</div>
+    <div style="display:flex; justify-content:flex-end; padding:10px 18px 0;" id="add-plt-wrap" style="display:none">
+      <button class="add-plt-btn" onclick="addPltColumn()">+ Add PLT Column</button>
+    </div>
     <div class="table-scroll">
       <table id="freight-table">
-        <thead>
-          <tr>
-            <th style="width:36px">#</th>
-            <th>Shipment #</th>
-            <th>Internal ID</th>
-            <th>Receiver</th>
-            <th>Location</th>
-            <th class="center" style="width:55px">PCS</th>
-            <th>Piece Breakdown</th>
-            <th class="center" style="width:70px">Stickered</th>
-            <th class="center" style="width:130px">Packed</th>
-          </tr>
-        </thead>
+        <thead><tr id="thead-row"></tr></thead>
         <tbody id="freight-body">
-          <tr><td colspan="9"><div class="empty-state"><div class="icon">📦</div>Select a group above and tap Load Freight</div></td></tr>
+          <tr><td colspan="10"><div class="empty-state"><div class="icon">📦</div>Select a group above and tap Load Freight</div></td></tr>
         </tbody>
       </table>
     </div>
     <button class="add-row-btn" onclick="addRow()">+ Add Row</button>
-    <div class="totals-bar">
-      <div class="total-item"><span class="total-label">Total PCS</span><span class="total-value" id="total-pcs">0</span></div>
-      <div class="total-item"><span class="total-label">Packed</span><span class="total-value" id="total-packed">0</span></div>
-      <div class="total-item"><span class="total-label">Remaining</span><span class="total-value" id="total-remaining">0</span></div>
-      <div class="progress-bar-wrap">
-        <div class="progress-label">Pack Progress</div>
-        <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
-      </div>
+    <div class="totals-bar" id="totals-bar">
+      <!-- populated by mode -->
     </div>
   </div>
 
-  <!-- NOTES -->
   <div class="card">
     <div class="card-header">Notes</div>
-    <textarea class="notes-area" placeholder="Any additional notes about this container pack..."></textarea>
+    <textarea class="notes-area" placeholder="Any additional notes..."></textarea>
   </div>
-
-  <div class="print-tip">Tap "Save as PDF" to export — choose Save to Files or Print from the share sheet</div>
+  <div class="print-tip">Tap "Save as PDF" → Save to Files or Print from the share sheet</div>
 </div>
 
 <script>
-  const API_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjY1NTA2MjcxMCwiYWFpIjoxMSwidWlkIjo0Mjk5NTY4OSwiaWFkIjoiMjAyNi0wNS0wN1QwMzozMDo0Ny4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MTY2NzY4OTQsInJnbiI6InVzZTEifQ.Aju0mNGNOKtHfSNkYp_uL4_zVuHMXVIZ6JHdWClEwPQ';
-  const BOARD_ID = '6964153366';
-  let rowCount = 0;
+const API_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjY1NTA2MjcxMCwiYWFpIjoxMSwidWlkIjo0Mjk5NTY4OSwiaWFkIjoiMjAyNi0wNS0wN1QwMzozMDo0Ny4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MTY2NzY4OTQsInJnbiI6InVzZTEifQ.Aju0mNGNOKtHfSNkYp_uL4_zVuHMXVIZ6JHdWClEwPQ';
+const BOARD_ID = '6964153366';
+let rowCount = 0;
+let tallyData = {};
+let currentMode = 'sea';
+let pltCount = 1; // for air mode
 
-  async function mondayQuery(query) {
-    const res = await fetch('https://api.monday.com/v2', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': API_TOKEN, 'API-Version': '2024-01' },
-      body: JSON.stringify({ query })
-    });
-    return res.json();
+async function mondayQuery(query) {
+  const res = await fetch('https://api.monday.com/v2', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':API_TOKEN,'API-Version':'2024-01'},
+    body:JSON.stringify({query})
+  });
+  return res.json();
+}
+
+function setStatus(msg, type='') {
+  const el = document.getElementById('status-msg');
+  el.textContent = msg;
+  el.className = 'status-msg' + (type ? ' '+type : '');
+}
+
+// ── MODE SWITCHING ──────────────────────────────────────────────
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('btn-sea').classList.toggle('active', mode==='sea');
+  document.getElementById('btn-air').classList.toggle('active', mode==='air');
+  document.getElementById('mode-subtitle').textContent = mode==='sea' ? 'Container Pack Checklist' : 'Air Freight Pack Checklist';
+  document.getElementById('print-title').textContent = mode==='sea' ? 'Container Pack Checklist' : 'Air Freight Pack Checklist';
+  document.getElementById('details-header').textContent = mode==='sea' ? 'Container Details' : 'Consignment Details';
+  document.getElementById('add-plt-wrap').style.display = mode==='air' ? 'flex' : 'none';
+
+  renderDetailsGrid();
+  renderTableHeaders();
+  clearRows();
+  renderTotalsBar();
+}
+
+function renderDetailsGrid() {
+  const g = document.getElementById('details-grid');
+  if (currentMode === 'sea') {
+    g.innerHTML = `
+      <div class="field-group"><div class="field-label">Consol #</div><input class="field-input" id="f-consol" type="text" placeholder="e.g. BNESYD00123"></div>
+      <div class="field-group"><div class="field-label">Destination</div><input class="field-input" id="f-dest" type="text" placeholder="e.g. POM"></div>
+      <div class="field-group"><div class="field-label">Container #</div><input class="field-input" id="f-cont" type="text" placeholder="e.g. TCKU1234567"></div>
+      <div class="field-group"><div class="field-label">Container Size</div><input class="field-input" id="f-size" type="text" placeholder="e.g. 20FT"></div>
+      <div class="field-group"><div class="field-label">Seal #</div><input class="field-input" id="f-seal" type="text" placeholder="Seal number"></div>
+      <div class="field-group"><div class="field-label">Tare Weight</div><input class="field-input" id="f-tare" type="text" placeholder="kg"></div>
+      <div class="field-group"><div class="field-label">Date Packed</div><input class="field-input" id="f-date" type="text" value="${new Date().toLocaleDateString('en-AU')}"></div>
+      <div class="field-group"><div class="field-label">Packed By</div><input class="field-input" id="f-packedby" type="text" placeholder="Name"></div>
+      <div class="field-group"><div class="field-label">Supervised By</div><input class="field-input" id="f-supervisedby" type="text" placeholder="Name"></div>`;
+  } else {
+    g.innerHTML = `
+      <div class="field-group"><div class="field-label">Consol #</div><input class="field-input" id="f-consol" type="text" placeholder="e.g. BNESYD00123"></div>
+      <div class="field-group"><div class="field-label">Destination</div><input class="field-input" id="f-dest" type="text" placeholder="e.g. POM"></div>
+      <div class="field-group"><div class="field-label">PLT KG</div><input class="field-input" id="f-pltkg" type="text" placeholder="kg"></div>
+      <div class="field-group"><div class="field-label">Total KG</div><input class="field-input" id="f-totalkg" type="text" placeholder="kg"></div>
+      <div class="field-group"><div class="field-label">Date</div><input class="field-input" id="f-date" type="text" value="${new Date().toLocaleDateString('en-AU')}"></div>
+      <div class="field-group"><div class="field-label">Packed By</div><input class="field-input" id="f-packedby" type="text" placeholder="Name"></div>`;
   }
+}
 
-  function setStatus(msg, type = '') {
-    const el = document.getElementById('status-msg');
-    el.textContent = msg;
-    el.className = 'status-msg' + (type ? ' ' + type : '');
+function renderTableHeaders() {
+  const tr = document.getElementById('thead-row');
+  pltCount = 1;
+  if (currentMode === 'sea') {
+    tr.innerHTML = `
+      <th style="width:32px">#</th>
+      <th>Shipment #</th>
+      <th>Internal ID</th>
+      <th>Receiver</th>
+      <th>Location</th>
+      <th class="center" style="width:50px">PCS</th>
+      <th>Piece Breakdown</th>
+      <th class="center" style="width:64px">Stickered</th>
+      <th class="center" style="width:120px">Packed</th>`;
+  } else {
+    tr.innerHTML = `
+      <th style="width:32px">#</th>
+      <th>Shipment #</th>
+      <th>Internal ID</th>
+      <th>Location</th>
+      <th class="center" style="width:50px">PCE's</th>
+      <th class="center" style="width:64px">Lithium</th>
+      <th class="center" style="width:64px">Loose</th>
+      <th class="center" style="width:120px" id="plt-th-1"><div class="plt-header">PLT 1</div></th>`;
   }
+}
 
-  async function loadGroups() {
-    setStatus('Loading groups from Monday.com...');
-    try {
-      const data = await mondayQuery(`{ boards(ids: ${BOARD_ID}) { groups { id title } } }`);
-      const groups = data?.data?.boards?.[0]?.groups;
-      if (!groups || groups.length === 0) { setStatus('No groups found.', 'error'); return; }
-      const select = document.getElementById('group-select');
-      select.innerHTML = '<option value="">— Choose a group —</option>';
-      groups.forEach(g => {
-        const opt = document.createElement('option');
-        opt.value = g.id; opt.textContent = g.title;
-        select.appendChild(opt);
-      });
-      document.getElementById('load-btn').disabled = false;
-      setStatus(`${groups.length} groups loaded. Select one and tap Load Freight.`, 'success');
-    } catch(e) { setStatus('Could not connect to Monday.com. Check your connection.', 'error'); }
+function renderTotalsBar() {
+  const bar = document.getElementById('totals-bar');
+  if (currentMode === 'sea') {
+    bar.innerHTML = `
+      <div class="total-item"><span class="total-label">Total PCS</span><span class="total-value" id="total-pcs">0</span></div>
+      <div class="total-item"><span class="total-label">Packed</span><span class="total-value" id="total-packed">0</span></div>
+      <div class="total-item"><span class="total-label">Remaining</span><span class="total-value" id="total-remaining">0</span></div>
+      <div class="progress-bar-wrap"><div class="progress-label">Pack Progress</div><div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div></div>`;
+  } else {
+    bar.innerHTML = `
+      <div class="total-item"><span class="total-label">Total PCE's</span><span class="total-value" id="total-pcs">0</span></div>
+      <div class="progress-bar-wrap"><div class="progress-label">PLT Progress</div><div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div></div>`;
   }
+}
 
-  async function loadGroup() {
+function clearRows() {
+  document.getElementById('freight-body').innerHTML = `<tr><td colspan="10"><div class="empty-state"><div class="icon">📦</div>Select a group above and tap Load Freight</div></td></tr>`;
+  rowCount = 0;
+  tallyData = {};
+}
+
+// ── PLT COLUMNS (AIR) ───────────────────────────────────────────
+function addPltColumn() {
+  pltCount++;
+  // Add header
+  const th = document.createElement('th');
+  th.className = 'center';
+  th.style.width = '120px';
+  th.id = `plt-th-${pltCount}`;
+  th.innerHTML = `<div class="plt-header">PLT ${pltCount}</div>`;
+  document.getElementById('thead-row').appendChild(th);
+  // Add cell to every existing row
+  document.getElementById('freight-body').querySelectorAll('tr[id^="row-"]').forEach(row => {
+    const rid = parseInt(row.id.replace('row-',''));
+    const key = `${rid}-plt${pltCount}`;
+    tallyData[key] = 0;
+    const td = document.createElement('td');
+    td.className = 'center';
+    td.id = `plt-cell-${rid}-${pltCount}`;
+    td.innerHTML = buildTallyHTML(0, rid, pltCount);
+    row.appendChild(td);
+  });
+}
+
+// ── TALLY ───────────────────────────────────────────────────────
+function buildTallyHTML(n, rowId, pltNum) {
+  const key = `${rowId}-plt${pltNum}`;
+  let visual = tallyVisual(n);
+  return `<div class="tally-cell">
+    <button class="tally-btn tally-minus" onclick="changeTally(${rowId},${pltNum},-1)">−</button>
+    <div style="text-align:center">
+      <div class="tally-marks" id="tm-${rowId}-${pltNum}">${visual||'—'}</div>
+      <div class="tally-count" id="tc-${rowId}-${pltNum}">${n>0?n+' pcs':''}</div>
+    </div>
+    <button class="tally-btn tally-plus" onclick="changeTally(${rowId},${pltNum},1)">+</button>
+  </div>`;
+}
+
+function buildSeaTallyHTML(n, rowId) {
+  let visual = tallyVisual(n);
+  return `<div class="tally-cell">
+    <button class="tally-btn tally-minus" onclick="changeSeaTally(${rowId},-1)">−</button>
+    <div style="text-align:center">
+      <div class="tally-marks" id="stm-${rowId}">${visual||'—'}</div>
+      <div class="tally-count" id="stc-${rowId}">${n>0?n+' pcs':''}</div>
+    </div>
+    <button class="tally-btn tally-plus" onclick="changeSeaTally(${rowId},1)">+</button>
+  </div>`;
+}
+
+function tallyVisual(n) {
+  let visual = '';
+  const fives = Math.floor(n/5), rem = n%5;
+  for (let i=0;i<fives;i++) visual += '<span style="display:inline-block;margin-right:2px"><span style="text-decoration:line-through;letter-spacing:-1px">||||</span>|</span>';
+  visual += '|'.repeat(rem);
+  return visual;
+}
+
+function changeTally(rowId, pltNum, delta) {
+  const key = `${rowId}-plt${pltNum}`;
+  tallyData[key] = Math.max(0, (tallyData[key]||0) + delta);
+  const n = tallyData[key];
+  document.getElementById(`tm-${rowId}-${pltNum}`).innerHTML = tallyVisual(n)||'—';
+  document.getElementById(`tc-${rowId}-${pltNum}`).textContent = n>0?n+' pcs':'';
+  updateTotals();
+}
+
+function changeSeaTally(rowId, delta) {
+  const key = `sea-${rowId}`;
+  tallyData[key] = Math.max(0, (tallyData[key]||0) + delta);
+  const n = tallyData[key];
+  document.getElementById(`stm-${rowId}`).innerHTML = tallyVisual(n)||'—';
+  document.getElementById(`stc-${rowId}`).textContent = n>0?n+' pcs':'';
+  recheckDone(rowId);
+  updateTotals();
+}
+
+function getSeaTarget(rowId) {
+  const row = document.getElementById(`row-${rowId}`);
+  if (!row) return 0;
+  const breakdown = row.querySelector('.breakdown-input')?.value?.trim()||'';
+  if (breakdown) {
+    const nums = breakdown.match(/\d+/g);
+    if (nums && nums.length>0) return nums.reduce((a,b)=>a+parseInt(b),0);
+  }
+  return parseInt(row.querySelector('.num-input')?.value)||0;
+}
+
+function recheckDone(rowId) {
+  const row = document.getElementById(`row-${rowId}`);
+  if (!row) return;
+  const target = getSeaTarget(rowId);
+  const n = tallyData[`sea-${rowId}`]||0;
+  row.classList.toggle('done-row', n>0 && target>0 && n>=target);
+}
+
+// ── MONDAY API ──────────────────────────────────────────────────
+async function loadGroups() {
+  setStatus('Loading groups from Monday.com...');
+  try {
+    const data = await mondayQuery(`{ boards(ids:${BOARD_ID}) { groups { id title } } }`);
+    const groups = data?.data?.boards?.[0]?.groups;
+    if (!groups||groups.length===0) { setStatus('No groups found.','error'); return; }
     const select = document.getElementById('group-select');
-    const groupId = select.value;
-    const groupName = select.options[select.selectedIndex]?.text;
-    if (!groupId) { setStatus('Please select a group first.', 'error'); return; }
+    select.innerHTML = '<option value="">— Choose a group —</option>';
+    groups.forEach(g => {
+      const opt = document.createElement('option');
+      opt.value=g.id; opt.textContent=g.title;
+      select.appendChild(opt);
+    });
+    document.getElementById('load-btn').disabled = false;
+    setStatus(`${groups.length} groups loaded.`,'success');
+  } catch(e) { setStatus('Could not connect to Monday.com. Check your connection.','error'); }
+}
 
-    setStatus('Loading freight items...');
-    document.getElementById('load-btn').disabled = true;
-
-    try {
-      const data = await mondayQuery(`{
-        boards(ids: ${BOARD_ID}) {
-          groups(ids: "${groupId}") {
-            title
-            items_page(limit: 200) {
-              items {
-                name
-                column_values {
-                  id text
-                  column { title }
-                }
-              }
+async function loadGroup() {
+  const select = document.getElementById('group-select');
+  const groupId = select.value;
+  const groupName = select.options[select.selectedIndex]?.text;
+  if (!groupId) { setStatus('Please select a group first.','error'); return; }
+  setStatus('Loading freight items...');
+  document.getElementById('load-btn').disabled = true;
+  try {
+    const data = await mondayQuery(`{
+      boards(ids:${BOARD_ID}) {
+        groups(ids:"${groupId}") {
+          items_page(limit:200) {
+            items {
+              name
+              column_values { id text column { title } }
             }
           }
         }
-      }`);
-
-      const items = data?.data?.boards?.[0]?.groups?.[0]?.items_page?.items;
-      if (!items || items.length === 0) { setStatus('No items found in this group.', 'error'); document.getElementById('load-btn').disabled = false; return; }
-
-      document.getElementById('freight-body').innerHTML = '';
-      rowCount = 0;
-
-      items.forEach(item => {
-        const cols = {};
-        item.column_values.forEach(cv => {
-          if (cv.column?.title) cols[cv.column.title.toLowerCase().trim()] = cv.text || '';
-        });
-
-        // Log columns for debugging
-        console.log('Item:', item.name, 'Columns:', cols);
-
-        // Also map by column ID directly
-        const colsById = {};
-        item.column_values.forEach(cv => { colsById[cv.id] = cv.text || ''; });
-
-        addRow({
-          sender: item.name,
-          id: colsById['item_id__1'] || cols['internal id'] || cols['check in #'] || cols['job #'] || '',
-          receiver: colsById['text73__1'] || cols['receiver'] || cols['consignee'] || '',
-          loc: cols['loc'] || cols['location'] || cols['bay'] || '',
-          pcs: cols['pcs'] || cols['pieces'] || cols['qty'] || cols['quantity'] || '',
-          breakdown: cols['piece breakdown'] || cols['breakdown'] || cols['description'] || ''
-        });
-      });
-
-      document.getElementById('print-group-name').textContent = groupName;
-      setStatus(`✓ ${items.length} items loaded from "${groupName}"`, 'success');
-    } catch(e) { setStatus('Error loading items. Try again.', 'error'); console.error(e); }
-
-    document.getElementById('load-btn').disabled = false;
-  }
-
-  // Tally mark rendering: groups of 5 using classic tally style
-  function tallyMarks(n) {
-    if (n === 0) return '';
-    let marks = '';
-    const groups = Math.floor(n / 5);
-    const rem = n % 5;
-    for (let i = 0; i < groups; i++) marks += '𝍸 ';
-    // Partial group
-    const partials = ['', '𝍴', '𝍵', '𝍶', '𝍷'];
-    if (rem > 0) marks += partials[rem];
-    return marks.trim();
-  }
-
-  // Fallback simple tally using | and strikethrough
-  function tallyStr(n) {
-    if (n === 0) return '';
-    let s = '';
-    for (let i = 1; i <= n; i++) {
-      if (i % 5 === 0) s += '⁵';
-      else s += '|';
-    }
-    // Replace groups of 5
-    let result = '';
-    let count = 0;
-    for (let i = 1; i <= n; i++) {
-      count++;
-      if (count === 5) { result += '<span style="text-decoration:line-through">||||</span>| '; count = 0; }
-      else if (i === n) { result += '|'.repeat(count % 5 === 0 ? 0 : count % 5); }
-    }
-    return result || '';
-  }
-
-  function buildTallyHTML(tally, rowId) {
-    const n = tally;
-    // Build visual tally: groups of 4 pipes + diagonal strike for each 5
-    let visual = '';
-    const fives = Math.floor(n / 5);
-    const rem = n % 5;
-    for (let i = 0; i < fives; i++) visual += '<span style="display:inline-block;margin-right:3px"><span style="text-decoration:line-through;letter-spacing:-1px">||||</span>|</span>';
-    visual += '|'.repeat(rem);
-
-    return `
-      <div class="tally-cell">
-        <button class="tally-btn tally-minus" onclick="changeTally(${rowId}, -1)" title="Remove">−</button>
-        <div style="text-align:center">
-          <div class="tally-marks" id="tally-marks-${rowId}">${visual || '—'}</div>
-          <div class="tally-count" id="tally-count-${rowId}">${n > 0 ? n + ' pcs' : ''}</div>
-        </div>
-        <button class="tally-btn tally-plus" onclick="changeTally(${rowId}, 1)" title="Add">+</button>
-      </div>`;
-  }
-
-  const tallyData = {};
-
-  function changeTally(rowId, delta) {
-    tallyData[rowId] = Math.max(0, (tallyData[rowId] || 0) + delta);
-    const n = tallyData[rowId];
-
-    let visual = '';
-    const fives = Math.floor(n / 5);
-    const rem = n % 5;
-    for (let i = 0; i < fives; i++) visual += '<span style="display:inline-block;margin-right:3px"><span style="text-decoration:line-through;letter-spacing:-1px">||||</span>|</span>';
-    visual += '|'.repeat(rem);
-
-    document.getElementById(`tally-marks-${rowId}`).innerHTML = visual || '—';
-    document.getElementById(`tally-count-${rowId}`).textContent = n > 0 ? n + ' pcs' : '';
-
-    recheckDone(rowId);
-    updateTotals();
-  }
-
-  function getTarget(rowId) {
-    const row = document.getElementById(`row-${rowId}`);
-    if (!row) return 0;
-    const breakdown = row.querySelector('.breakdown-input')?.value?.trim() || '';
-    if (breakdown) {
-      // Sum all numbers found in the breakdown string e.g. "2 ctn, 1 plt" = 3
-      const nums = breakdown.match(/\d+/g);
-      if (nums && nums.length > 0) {
-        return nums.reduce((a, b) => a + parseInt(b), 0);
       }
-    }
-    // Fall back to PCS only if breakdown is empty
-    return parseInt(row.querySelector('.num-input')?.value) || 0;
-  }
+    }`);
+    const items = data?.data?.boards?.[0]?.groups?.[0]?.items_page?.items;
+    if (!items||items.length===0) { setStatus('No items found.','error'); document.getElementById('load-btn').disabled=false; return; }
+    document.getElementById('freight-body').innerHTML='';
+    rowCount=0; tallyData={};
+    items.forEach(item => {
+      const cols={}, colsById={};
+      item.column_values.forEach(cv => {
+        if (cv.column?.title) cols[cv.column.title.toLowerCase().trim()] = cv.text||'';
+        colsById[cv.id] = cv.text||'';
+      });
+      addRow({
+        sender: item.name,
+        id: colsById['item_id__1']||cols['internal id']||cols['check in #']||'',
+        receiver: colsById['text73__1']||cols['receiver']||cols['consignee']||'',
+        loc: cols['loc']||cols['location']||cols['bay']||'',
+        pcs: cols['pcs']||cols['pce\'s']||cols['pieces']||cols['qty']||'',
+        breakdown: cols['piece breakdown']||cols['breakdown']||''
+      });
+    });
+    document.getElementById('print-group-name').textContent = groupName;
+    setStatus(`✓ ${items.length} items loaded from "${groupName}"`,'success');
+  } catch(e) { setStatus('Error loading items. Try again.','error'); console.error(e); }
+  document.getElementById('load-btn').disabled=false;
+}
 
-  function recheckDone(rowId) {
-    const row = document.getElementById(`row-${rowId}`);
-    if (!row) return;
-    const target = getTarget(rowId);
-    const n = tallyData[rowId] || 0;
-    row.classList.toggle('done-row', n > 0 && target > 0 && n >= target);
-  }
+// ── ADD ROW ─────────────────────────────────────────────────────
+function addRow(data={}) {
+  rowCount++;
+  const rid = rowCount;
+  const tbody = document.getElementById('freight-body');
+  const tr = document.createElement('tr');
+  tr.id = `row-${rid}`;
 
-  function addRow(data = {}) {
-    rowCount++;
-    const rid = rowCount;
-    tallyData[rid] = 0;
-    const tbody = document.getElementById('freight-body');
-    const tr = document.createElement('tr');
-    tr.id = `row-${rid}`;
+  if (currentMode === 'sea') {
+    tallyData[`sea-${rid}`] = 0;
     tr.innerHTML = `
       <td style="color:var(--muted);font-size:11px;font-weight:600;text-align:center">${rid}</td>
-      <td><input class="td-input" type="text" value="${data.sender||''}" placeholder="Shipment / Sender"></td>
+      <td><input class="td-input" type="text" value="${data.sender||''}" placeholder="Shipment #"></td>
       <td><input class="td-input" type="text" value="${data.id||''}" placeholder="Internal ID" style="font-family:'Roboto Mono',monospace;font-size:12px"></td>
       <td><input class="td-input" type="text" value="${data.receiver||''}" placeholder="Receiver"></td>
       <td><input class="td-input" type="text" value="${data.loc||''}" placeholder="e.g. D4"></td>
       <td><input class="num-input" type="number" min="0" value="${data.pcs||''}" placeholder="0" data-rid="${rid}" oninput="updateTotals(); recheckDone(parseInt(this.dataset.rid))"></td>
       <td><input class="td-input breakdown-input" type="text" value="${data.breakdown||''}" placeholder="e.g. 2 ctn, 1 plt" data-rid="${rid}" oninput="recheckDone(parseInt(this.dataset.rid))"></td>
       <td class="center"><div class="check-cell"><div class="check-box" onclick="this.classList.toggle('checked')"></div></div></td>
-      <td class="center">${buildTallyHTML(0, rid)}</td>
-    `;
-    tbody.appendChild(tr);
-    updateTotals();
+      <td class="center">${buildSeaTallyHTML(0,rid)}</td>`;
+  } else {
+    // Air mode: PLT columns
+    let pltCells = '';
+    for (let p=1; p<=pltCount; p++) {
+      tallyData[`${rid}-plt${p}`] = 0;
+      pltCells += `<td class="center" id="plt-cell-${rid}-${p}">${buildTallyHTML(0,rid,p)}</td>`;
+    }
+    tr.innerHTML = `
+      <td style="color:var(--muted);font-size:11px;font-weight:600;text-align:center">${rid}</td>
+      <td><input class="td-input" type="text" value="${data.sender||''}" placeholder="Shipment #"></td>
+      <td><input class="td-input" type="text" value="${data.id||''}" placeholder="Internal ID" style="font-family:'Roboto Mono',monospace;font-size:12px"></td>
+      <td><input class="td-input" type="text" value="${data.loc||''}" placeholder="e.g. R4"></td>
+      <td><input class="num-input" type="number" min="0" value="${data.pcs||''}" placeholder="0" oninput="updateTotals()"></td>
+      <td class="center"><div class="check-cell"><div class="check-box" onclick="this.classList.toggle('checked')"></div></div></td>
+      <td class="center"><div class="check-cell"><div class="check-box" onclick="this.classList.toggle('checked')"></div></div></td>
+      ${pltCells}`;
   }
 
-  function updateTotals() {
-    let totalPcs = 0, packedPcs = 0;
-    document.getElementById('freight-body').querySelectorAll('tr').forEach(row => {
-      const pcsInput = row.querySelector('.num-input');
-      const pcs = parseInt(pcsInput?.value) || 0;
-      totalPcs += pcs;
-      const rid = parseInt(row.id?.replace('row-', ''));
-      if (rid && tallyData[rid]) packedPcs += tallyData[rid];
-    });
-    document.getElementById('total-pcs').textContent = totalPcs;
-    document.getElementById('total-packed').textContent = packedPcs;
-    document.getElementById('total-remaining').textContent = Math.max(0, totalPcs - packedPcs);
-    const pct = totalPcs > 0 ? Math.round((packedPcs / totalPcs) * 100) : 0;
-    document.getElementById('progress-fill').style.width = Math.min(100, pct) + '%';
-  }
+  tbody.appendChild(tr);
+  updateTotals();
+}
 
-  document.getElementById('date').value = new Date().toLocaleDateString('en-AU');
-  loadGroups();
+// ── TOTALS ───────────────────────────────────────────────────────
+function updateTotals() {
+  let totalPcs=0, packedPcs=0;
+  document.getElementById('freight-body').querySelectorAll('tr[id^="row-"]').forEach(row => {
+    const pcs = parseInt(row.querySelector('.num-input')?.value)||0;
+    totalPcs += pcs;
+    if (currentMode==='sea') {
+      const rid = parseInt(row.id.replace('row-',''));
+      packedPcs += tallyData[`sea-${rid}`]||0;
+    }
+  });
+  const tpEl = document.getElementById('total-pcs');
+  if (tpEl) tpEl.textContent = totalPcs;
+  if (currentMode==='sea') {
+    const tpackEl = document.getElementById('total-packed');
+    const tremEl = document.getElementById('total-remaining');
+    const pfEl = document.getElementById('progress-fill');
+    if (tpackEl) tpackEl.textContent = packedPcs;
+    if (tremEl) tremEl.textContent = Math.max(0,totalPcs-packedPcs);
+    const pct = totalPcs>0 ? Math.round((packedPcs/totalPcs)*100) : 0;
+    if (pfEl) pfEl.style.width = Math.min(100,pct)+'%';
+  }
+}
+
+// ── INIT ─────────────────────────────────────────────────────────
+setMode('sea');
+loadGroups();
 </script>
 </body>
 </html>
