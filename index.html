@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -239,7 +238,7 @@
         <thead>
           <tr>
             <th style="width:36px">#</th>
-            <th>Sender</th>
+            <th>Shipment #</th>
             <th>Internal ID</th>
             <th>Receiver</th>
             <th>Location</th>
@@ -355,10 +354,14 @@
         // Log columns for debugging
         console.log('Item:', item.name, 'Columns:', cols);
 
+        // Also map by column ID directly
+        const colsById = {};
+        item.column_values.forEach(cv => { colsById[cv.id] = cv.text || ''; });
+
         addRow({
           sender: item.name,
-          id: cols['check in #'] || cols['internal id'] || cols['shipment #'] || cols['job #'] || cols['file #'] || '',
-          receiver: cols['receiver'] || cols['consignee'] || cols['to'] || '',
+          id: colsById['item_id__1'] || cols['internal id'] || cols['check in #'] || cols['job #'] || '',
+          receiver: colsById['text73__1'] || cols['receiver'] || cols['consignee'] || '',
           loc: cols['loc'] || cols['location'] || cols['bay'] || '',
           pcs: cols['pcs'] || cols['pieces'] || cols['qty'] || cols['quantity'] || '',
           breakdown: cols['piece breakdown'] || cols['breakdown'] || cols['description'] || ''
@@ -457,7 +460,7 @@
     tr.id = `row-${rid}`;
     tr.innerHTML = `
       <td style="color:var(--muted);font-size:11px;font-weight:600;text-align:center">${rid}</td>
-      <td><input class="td-input" type="text" value="${data.sender||''}" placeholder="Sender name"></td>
+      <td><input class="td-input" type="text" value="${data.sender||''}" placeholder="Shipment / Sender"></td>
       <td><input class="td-input" type="text" value="${data.id||''}" placeholder="Internal ID" style="font-family:'Roboto Mono',monospace;font-size:12px"></td>
       <td><input class="td-input" type="text" value="${data.receiver||''}" placeholder="Receiver"></td>
       <td><input class="td-input" type="text" value="${data.loc||''}" placeholder="e.g. D4"></td>
