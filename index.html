@@ -594,7 +594,7 @@ function addRow(data={}) {
       <td><input class="td-input" type="text" value="${data.loc||''}" placeholder="e.g. R4"></td>
       <td><input class="num-input" type="number" min="0" value="${data.pcs||''}" placeholder="0" data-rid="${rid}" oninput="updateTotals();checkAirRowDone(parseInt(this.dataset.rid))"></td>
       <td class="center" style="font-family:'Roboto Mono',monospace;font-size:12px;font-weight:600;color:var(--navy)">${kg>0?kg.toFixed(2):''}</td>
-      <td class="center"><div class="check-cell"><div class="check-box" onclick="this.classList.toggle('checked')"></div></div></td>
+      <td class="center"><input class="td-input" type="text" placeholder="—" style="text-align:center"></td>
       <td class="center"><div class="check-cell"><div class="check-box" onclick="this.classList.toggle('checked')"></div></div></td>
       ${pltCells}`;
   }
