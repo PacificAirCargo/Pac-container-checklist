@@ -166,6 +166,8 @@
       <button class="mode-btn" id="btn-air" onclick="setMode('air')">✈️ AIR</button>
     </div>
     <button class="clear-btn" onclick="clearDetails()">✕ Clear Details</button>
+    <button class="clear-btn" id="backup-btn" onclick="manualSave()" style="background:transparent;border-color:rgba(255,255,255,0.4);color:white">💾 Backup Save</button>
+    <span id="autosave-indicator" style="color:rgba(255,255,255,0.5);font-size:11px;font-weight:500;white-space:nowrap"></span>
     <button class="save-btn" onclick="window.print()">⬇ Save as PDF</button>
   </div>
 </div>
@@ -301,6 +303,7 @@ function clearDetails() {
       input.value = '';
     }
   });
+  try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
 }
 
 // ── MODE ─────────────────────────────────────────────────────────
@@ -642,9 +645,128 @@ function clearRows() {
   rowCount=0; tallyData={};
 }
 
+// ── AUTOSAVE / RESTORE ──────────────────────────────────────────
+const SAVE_KEY = 'pac_pack_checklist_save_v1';
+
+function collectState() {
+  const detailFields = {};
+  document.getElementById('details-grid').querySelectorAll('.field-input').forEach(input => {
+    detailFields[input.id] = input.value;
+  });
+  const notes = document.querySelector('.notes-area')?.value || '';
+
+  return {
+    mode: currentMode,
+    pltCount: pltCount,
+    rowCount: rowCount,
+    tallyData: tallyData,
+    detailFields: detailFields,
+    notes: notes,
+    freightBodyHTML: document.getElementById('freight-body').innerHTML,
+    tfootHTML: document.getElementById('tfoot').innerHTML,
+    theadHTML: document.getElementById('thead-row').innerHTML,
+    savedAt: new Date().toISOString()
+  };
+}
+
+function saveState() {
+  try {
+    const state = collectState();
+    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+    const ind = document.getElementById('autosave-indicator');
+    if (ind) {
+      ind.textContent = '✓ Saved';
+      clearTimeout(window._autosaveIndTimeout);
+      window._autosaveIndTimeout = setTimeout(() => { if(ind) ind.textContent=''; }, 1500);
+    }
+  } catch(e) { /* storage full or unavailable - fail silently */ }
+}
+
+function manualSave() {
+  try {
+    saveState();
+    const btn = document.getElementById('backup-btn');
+    const original = btn.textContent;
+    btn.textContent = '✓ Saved!';
+    btn.style.background = 'var(--green)';
+    btn.style.borderColor = 'var(--green)';
+    setTimeout(() => {
+      btn.textContent = original;
+      btn.style.background = 'transparent';
+      btn.style.borderColor = 'rgba(255,255,255,0.4)';
+    }, 1500);
+  } catch(e) {
+    alert('Could not save — your device storage may be full.');
+  }
+}
+
+function restoreState(state) {
+  // Restore mode first (without resetting rows)
+  currentMode = state.mode;
+  pltCount = state.pltCount || 1;
+  rowCount = state.rowCount || 0;
+  tallyData = state.tallyData || {};
+
+  document.getElementById('btn-sea').classList.toggle('active', currentMode==='sea');
+  document.getElementById('btn-air').classList.toggle('active', currentMode==='air');
+  document.getElementById('mode-subtitle').textContent = currentMode==='sea'?'Container Pack Checklist':'Air Freight Pack Checklist';
+  document.getElementById('print-title').textContent = currentMode==='sea'?'Container Pack Checklist':'Air Freight Pack Checklist';
+  document.getElementById('details-header').textContent = currentMode==='sea'?'Container Details':'Consignment Details';
+  document.getElementById('plt-actions').style.display = currentMode==='air'?'flex':'none';
+  document.getElementById('row-actions').style.display = currentMode==='air'?'none':'flex';
+
+  renderDetailsGrid();
+  // Restore detail field values
+  Object.keys(state.detailFields||{}).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = state.detailFields[id];
+  });
+  const notesEl = document.querySelector('.notes-area');
+  if (notesEl) notesEl.value = state.notes || '';
+
+  // Restore table HTML directly (preserves all input values & tally visuals)
+  document.getElementById('thead-row').innerHTML = state.theadHTML;
+  document.getElementById('freight-body').innerHTML = state.freightBodyHTML;
+  document.getElementById('tfoot').innerHTML = state.tfootHTML;
+
+  updateTotals();
+  if (currentMode==='air') updateFooter();
+}
+
+function initAutosave() {
+  // Check for saved session
+  let saved = null;
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (raw) saved = JSON.parse(raw);
+  } catch(e) { saved = null; }
+
+  if (saved && saved.freightBodyHTML && !saved.freightBodyHTML.includes('empty-state')) {
+    const savedDate = saved.savedAt ? new Date(saved.savedAt).toLocaleString('en-AU', {dateStyle:'short', timeStyle:'short'}) : 'earlier';
+    const wantsRestore = confirm(`A saved checklist was found from ${savedDate}.\n\nRestore your previous work?`);
+    if (wantsRestore) {
+      restoreState(saved);
+    } else {
+      localStorage.removeItem(SAVE_KEY);
+    }
+  }
+
+  // Attach autosave listeners: any input/change/click anywhere in the container triggers a save
+  const container = document.querySelector('.container');
+  let saveTimeout = null;
+  function scheduleSave() {
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(saveState, 400); // debounce so it doesn't save on every keystroke
+  }
+  container.addEventListener('input', scheduleSave);
+  container.addEventListener('click', scheduleSave);
+}
+
 // ── INIT ─────────────────────────────────────────────────────────
 setMode('sea');
 loadGroups();
+initAutosave();
+
 </script>
 </body>
 </html>
