@@ -212,7 +212,10 @@
         <tfoot id="tfoot"></tfoot>
       </table>
     </div>
-    <button class="add-row-btn" id="add-row-btn" onclick="addRow()">+ Add Row</button>
+    <div id="row-actions" style="display:flex;gap:8px;margin:12px 18px">
+      <button class="add-row-btn" id="add-row-btn" onclick="addRow()" style="margin:0">+ Add Row</button>
+      <button class="add-row-btn" id="remove-row-btn" onclick="removeLastRow()" style="margin:0;border-color:#e74c3c;color:#e74c3c;flex:0 0 auto;padding:8px 18px">− Remove Last Row</button>
+    </div>
     <div class="totals-bar" id="totals-bar"></div>
   </div>
 
@@ -309,7 +312,7 @@ function setMode(mode) {
   document.getElementById('print-title').textContent = mode==='sea'?'Container Pack Checklist':'Air Freight Pack Checklist';
   document.getElementById('details-header').textContent = mode==='sea'?'Container Details':'Consignment Details';
   document.getElementById('plt-actions').style.display = mode==='air'?'flex':'none';
-  document.getElementById('add-row-btn').style.display = mode==='air'?'none':'block';
+  document.getElementById('row-actions').style.display = mode==='air'?'none':'flex';
   pltCount = 1;
   renderDetailsGrid(); renderTableHeaders(); clearRows(); renderTotalsBar(); renderFooter();
 }
@@ -341,13 +344,13 @@ function renderTableHeaders() {
   pltCount = 1;
   if (currentMode==='sea') {
     tr.innerHTML = `
-      <th style="width:32px">#</th><th>Shipment #</th><th>Internal ID</th><th>Receiver</th>
+      <th style="width:32px">#</th><th style="min-width:90px">Shipment #</th><th style="min-width:110px">Internal ID</th><th style="min-width:90px">Receiver</th>
       <th>Location</th><th class="center" style="width:50px">PCS</th>
       <th>Piece Breakdown</th><th class="center" style="width:60px">Stickered</th>
       <th class="center" style="width:130px">Packed</th>`;
   } else {
     tr.innerHTML = `
-      <th style="width:32px">#</th><th>Shipment #</th><th>Internal ID</th><th>Receiver</th>
+      <th style="width:32px">#</th><th style="min-width:90px">Shipment #</th><th style="min-width:110px">Internal ID</th><th style="min-width:90px">Receiver</th>
       <th>Location</th><th class="center" style="width:50px">PCE's</th>
       <th class="center" style="width:65px">KG</th>
       <th class="center" style="width:60px">Lithium</th>
@@ -534,6 +537,26 @@ function recheckSeaDone(rowId) {
 }
 
 // ── ADD ROW ──────────────────────────────────────────────────────
+function removeLastRow() {
+  const tbody = document.getElementById('freight-body');
+  const rows = tbody.querySelectorAll('tr[id^="row-"]');
+  if (rows.length === 0) return;
+  const lastRow = rows[rows.length - 1];
+  const rid = parseInt(lastRow.id.replace('row-',''));
+  lastRow.remove();
+  // Clean up tally data for this row
+  if (currentMode === 'sea') {
+    delete tallyData[`sea-${rid}`];
+  } else {
+    for (let p=1; p<=pltCount; p++) delete tallyData[`${rid}-plt${p}`];
+  }
+  if (tbody.querySelectorAll('tr[id^="row-"]').length === 0) {
+    tbody.innerHTML = `<tr><td colspan="12"><div class="empty-state"><div class="icon">📦</div>Select a group above and tap Load Freight</div></td></tr>`;
+  }
+  updateTotals();
+  if (currentMode==='air') updateFooter();
+}
+
 function addRow(data={}) {
   rowCount++;
   const rid = rowCount;
@@ -550,11 +573,11 @@ function addRow(data={}) {
     tr.innerHTML = `
       <td style="color:var(--muted);font-size:11px;font-weight:600;text-align:center">${rid}</td>
       <td><input class="td-input" type="text" value="${data.sender||''}" placeholder="Shipment #"></td>
-      <td><input class="td-input" type="text" value="${data.id||''}" placeholder="Internal ID" style="font-family:'Roboto Mono',monospace;font-size:12px"></td>
+      <td><input class="td-input" type="text" value="${data.id||''}" placeholder="Internal ID" style="font-family:'Roboto Mono',monospace;font-size:11.5px;white-space:nowrap"></td>
       <td><input class="td-input" type="text" value="${data.receiver||''}" placeholder="Receiver"></td>
       <td><input class="td-input" type="text" value="${data.loc||''}" placeholder="e.g. D4"></td>
       <td><input class="num-input" type="number" min="0" value="${data.pcs||''}" placeholder="0" data-rid="${rid}" oninput="updateTotals();recheckSeaDone(parseInt(this.dataset.rid))"></td>
-      <td><input class="td-input breakdown-input" type="text" value="${data.breakdown||''}" placeholder="e.g. 2 ctn, 1 plt" data-rid="${rid}" oninput="recheckSeaDone(parseInt(this.dataset.rid))"></td>
+      <td><input class="td-input breakdown-input" type="text" value="${data.breakdown||''}" placeholder="e.g. 2 ctn, 1 plt" data-rid="${rid}" oninput="recheckSeaDone(parseInt(this.dataset.rid)); updateTotals()"></td>
       <td class="center"><div class="check-cell"><div class="check-box" onclick="this.classList.toggle('checked')"></div></div></td>
       <td class="center">${buildSeaTallyHTML(0,rid)}</td>`;
   } else {
@@ -566,7 +589,7 @@ function addRow(data={}) {
     tr.innerHTML = `
       <td style="color:var(--muted);font-size:11px;font-weight:600;text-align:center">${rid}</td>
       <td><input class="td-input" type="text" value="${data.sender||''}" placeholder="Shipment #"></td>
-      <td><input class="td-input" type="text" value="${data.id||''}" placeholder="Internal ID" style="font-family:'Roboto Mono',monospace;font-size:12px"></td>
+      <td><input class="td-input" type="text" value="${data.id||''}" placeholder="Internal ID" style="font-family:'Roboto Mono',monospace;font-size:11.5px;white-space:nowrap"></td>
       <td><input class="td-input" type="text" value="${data.receiver||''}" placeholder="Receiver"></td>
       <td><input class="td-input" type="text" value="${data.loc||''}" placeholder="e.g. R4"></td>
       <td><input class="num-input" type="number" min="0" value="${data.pcs||''}" placeholder="0" data-rid="${rid}" oninput="updateTotals();checkAirRowDone(parseInt(this.dataset.rid))"></td>
@@ -582,19 +605,21 @@ function addRow(data={}) {
 
 // ── TOTALS ───────────────────────────────────────────────────────
 function updateTotals() {
-  let totalPcs=0, packedPcs=0, totalKg=0;
+  let totalPcs=0, packedPcs=0, totalKg=0, totalTarget=0;
   document.getElementById('freight-body').querySelectorAll('tr[id^="row-"]').forEach(row => {
     const rid = parseInt(row.id.replace('row-',''));
     const pcs = parseInt(row.querySelector('.num-input')?.value)||0;
     totalPcs += pcs;
-    if (currentMode==='sea') packedPcs += tallyData[`sea-${rid}`]||0;
-    else totalKg += parseFloat(row.dataset.freightkg||0)||0;
+    if (currentMode==='sea') {
+      packedPcs += tallyData[`sea-${rid}`]||0;
+      totalTarget += getSeaTarget(rid);
+    } else totalKg += parseFloat(row.dataset.freightkg||0)||0;
   });
   document.getElementById('total-pcs').textContent = totalPcs;
   if (currentMode==='sea') {
     document.getElementById('total-packed').textContent = packedPcs;
-    document.getElementById('total-remaining').textContent = Math.max(0,totalPcs-packedPcs);
-    const pct = totalPcs>0?Math.round((packedPcs/totalPcs)*100):0;
+    document.getElementById('total-remaining').textContent = Math.max(0,totalTarget-packedPcs);
+    const pct = totalTarget>0?Math.round((packedPcs/totalTarget)*100):0;
     document.getElementById('progress-fill').style.width = Math.min(100,pct)+'%';
   } else {
     const kgEl = document.getElementById('total-kg');
