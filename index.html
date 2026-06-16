@@ -167,7 +167,6 @@
     </div>
     <button class="clear-btn" onclick="clearDetails()">✕ Clear Details</button>
     <button class="clear-btn" id="backup-btn" onclick="manualSave()" style="background:transparent;border-color:rgba(255,255,255,0.4);color:white">💾 Backup Save</button>
-    <button class="clear-btn" onclick="saveState(); location.reload()" style="background:transparent;border-color:rgba(255,255,255,0.4);color:white">⟳ Refresh</button>
     <span id="autosave-indicator" style="color:rgba(255,255,255,0.5);font-size:11px;font-weight:500;white-space:nowrap"></span>
     <button class="save-btn" onclick="window.print()">⬇ Save as PDF</button>
   </div>
@@ -236,6 +235,7 @@ let rowCount = 0;
 let tallyData = {};   // key: "rid-pltN" (air) or "sea-rid"
 let currentMode = 'sea';
 let pltCount = 1;
+let lastLoadedGroupName = '';
 
 // ── MONDAY ──────────────────────────────────────────────────────
 async function mondayQuery(q) {
@@ -288,6 +288,8 @@ async function loadGroup() {
       });
     });
     document.getElementById('print-group-name').textContent = gname;
+    lastLoadedGroupName = gname;
+    saveState();
     setStatus(`✓ ${items.length} items loaded from "${gname}"`,'success');
     if (currentMode==='air') updateFooter();
   } catch(e) { setStatus('Error loading items.','error'); console.error(e); }
@@ -296,15 +298,10 @@ async function loadGroup() {
 
 // ── CLEAR DETAILS ────────────────────────────────────────────────
 function clearDetails() {
-  document.getElementById('details-grid').querySelectorAll('.field-input').forEach(input => {
-    // Keep date field re-populated with today
-    if (input.id === 'f-date') {
-      input.value = new Date().toLocaleDateString('en-AU');
-    } else {
-      input.value = '';
-    }
-  });
+  const confirmed = confirm('Are you sure you want to clear all details?\n\nThis will reset everything and refresh the page. This cannot be undone.');
+  if (!confirmed) return;
   try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
+  location.reload();
 }
 
 // ── MODE ─────────────────────────────────────────────────────────
@@ -666,6 +663,7 @@ function collectState() {
     freightBodyHTML: document.getElementById('freight-body').innerHTML,
     tfootHTML: document.getElementById('tfoot').innerHTML,
     theadHTML: document.getElementById('thead-row').innerHTML,
+    groupName: lastLoadedGroupName,
     savedAt: new Date().toISOString()
   };
 }
@@ -730,6 +728,9 @@ function restoreState(state) {
   document.getElementById('freight-body').innerHTML = state.freightBodyHTML;
   document.getElementById('tfoot').innerHTML = state.tfootHTML;
 
+  lastLoadedGroupName = state.groupName || '';
+  document.getElementById('print-group-name').textContent = lastLoadedGroupName;
+
   updateTotals();
   if (currentMode==='air') updateFooter();
 }
@@ -743,8 +744,8 @@ function initAutosave() {
   } catch(e) { saved = null; }
 
   if (saved && saved.freightBodyHTML && !saved.freightBodyHTML.includes('empty-state')) {
-    const savedDate = saved.savedAt ? new Date(saved.savedAt).toLocaleString('en-AU', {dateStyle:'short', timeStyle:'short'}) : 'earlier';
-    const wantsRestore = confirm(`A saved checklist was found from ${savedDate}.\n\nRestore your previous work?`);
+    const groupLabel = saved.groupName ? `"${saved.groupName}"` : 'a previous session';
+    const wantsRestore = confirm(`A saved checklist was found for ${groupLabel}.\n\nRestore your previous work?`);
     if (wantsRestore) {
       restoreState(saved);
     } else {
