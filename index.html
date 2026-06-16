@@ -22,6 +22,8 @@
     .mode-btn.active { background:var(--yellow); color:var(--navy); }
     .save-btn { background:var(--yellow); color:var(--navy); border:none; padding:10px 20px; border-radius:6px; font-weight:700; font-size:13px; cursor:pointer; }
     .save-btn:hover { opacity:0.85; }
+    .clear-btn { background:#e74c3c; color:white; border:none; padding:10px 18px; border-radius:6px; font-weight:700; font-size:13px; cursor:pointer; transition:all 0.2s; letter-spacing:0.3px; box-shadow:0 2px 8px rgba(231,76,60,0.5); }
+    .clear-btn:hover { background:#c0392b; box-shadow:0 2px 12px rgba(231,76,60,0.7); }
     .container { max-width:1200px; margin:24px auto; padding:0 16px 40px; }
     .card { background:white; border-radius:10px; border:1px solid var(--border); overflow:hidden; margin-bottom:20px; }
     .card-header { background:var(--navy); color:white; padding:14px 20px; font-weight:600; font-size:13px; letter-spacing:0.5px; text-transform:uppercase; }
@@ -163,6 +165,7 @@
       <button class="mode-btn active" id="btn-sea" onclick="setMode('sea')">🚢 SEA</button>
       <button class="mode-btn" id="btn-air" onclick="setMode('air')">✈️ AIR</button>
     </div>
+    <button class="clear-btn" onclick="clearDetails()">✕ Clear Details</button>
     <button class="save-btn" onclick="window.print()">⬇ Save as PDF</button>
   </div>
 </div>
@@ -209,7 +212,7 @@
         <tfoot id="tfoot"></tfoot>
       </table>
     </div>
-    <button class="add-row-btn" onclick="addRow()">+ Add Row</button>
+    <button class="add-row-btn" id="add-row-btn" onclick="addRow()">+ Add Row</button>
     <div class="totals-bar" id="totals-bar"></div>
   </div>
 
@@ -285,6 +288,18 @@ async function loadGroup() {
   document.getElementById('load-btn').disabled = false;
 }
 
+// ── CLEAR DETAILS ────────────────────────────────────────────────
+function clearDetails() {
+  document.getElementById('details-grid').querySelectorAll('.field-input').forEach(input => {
+    // Keep date field re-populated with today
+    if (input.id === 'f-date') {
+      input.value = new Date().toLocaleDateString('en-AU');
+    } else {
+      input.value = '';
+    }
+  });
+}
+
 // ── MODE ─────────────────────────────────────────────────────────
 function setMode(mode) {
   currentMode = mode;
@@ -294,6 +309,7 @@ function setMode(mode) {
   document.getElementById('print-title').textContent = mode==='sea'?'Container Pack Checklist':'Air Freight Pack Checklist';
   document.getElementById('details-header').textContent = mode==='sea'?'Container Details':'Consignment Details';
   document.getElementById('plt-actions').style.display = mode==='air'?'flex':'none';
+  document.getElementById('add-row-btn').style.display = mode==='air'?'none':'block';
   pltCount = 1;
   renderDetailsGrid(); renderTableHeaders(); clearRows(); renderTotalsBar(); renderFooter();
 }
