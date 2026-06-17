@@ -107,6 +107,8 @@
   @media print {
     body { background:white; font-size:10px; }
     .screen-header,.save-btn,.add-row-btn,.plt-actions,.print-tip,.group-bar,.status-msg,.tally-btn { display:none !important; }
+    [id^="sort-arrow-"] { display:none !important; }
+    thead th { cursor:default !important; }
     .container { max-width:100%; padding:0; margin:0; }
     .print-header { display:flex !important; align-items:center; justify-content:space-between; border-bottom:3px solid #1B3172; padding-bottom:10px; margin-bottom:14px; }
     .print-logo { font-size:20px; font-weight:800; color:#1B3172; }
@@ -119,7 +121,10 @@
     .field-group { padding:7px 10px; border-right:1px solid #ccc; border-bottom:1px solid #ccc; }
     .field-label { font-size:8px; font-weight:700; color:#6b7a99; text-transform:uppercase; margin-bottom:2px; }
     .field-input { font-size:11px; font-weight:600; border:none; border-bottom:1px solid #ccc; width:100%; padding:2px 0; }
-    table { width:100%; border-collapse:collapse; font-size:9px; }
+    table { width:100%; border-collapse:collapse; font-size:9px; table-layout:auto; }
+    .table-scroll { overflow:visible !important; }
+    .container { max-width:100%; padding:0; margin:0; }
+    @page { size: landscape; margin: 6mm; }
     thead tr { background:#1B3172 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     thead th { color:white !important; padding:5px 6px; font-size:8px; font-weight:700; text-transform:uppercase; text-align:left; vertical-align:top; }
     thead th.center { text-align:center; }
@@ -174,6 +179,32 @@
     .print-scale-3 .plt-label { font-size:7px; padding:1px 2px; }
     .print-scale-3 tbody td { padding:2px 3px; }
     .print-scale-3 .check-box { width:10px; height:10px; }
+
+    .print-scale-4 table { font-size:6px; }
+    .print-scale-4 thead th { font-size:5.5px; padding:2px 2px; }
+    .print-scale-4 .tally-marks { font-size:6.5px; }
+    .print-scale-4 .tally-count { font-size:5px; }
+    .print-scale-4 .tally-btn { width:11px; height:11px; font-size:7px; }
+    .print-scale-4 .plt-tare-input { width:28px; font-size:6px; }
+    .print-scale-4 .plt-total-val { font-size:7px; }
+    .print-scale-4 .plt-label { font-size:6px; padding:1px 2px; }
+    .print-scale-4 tbody td { padding:1.5px 2px; }
+    .print-scale-4 .check-box { width:8px; height:8px; }
+    .print-scale-4 thead th[id^="plt-th-"] { width:60px !important; }
+    .print-scale-4 .card-header { font-size:7px; padding:3px 6px; }
+    .print-scale-4 .fields-grid .field-input { font-size:9px; }
+
+    .print-scale-5 table { font-size:5px; }
+    .print-scale-5 thead th { font-size:4.5px; padding:1.5px 1.5px; }
+    .print-scale-5 .tally-marks { font-size:5.5px; }
+    .print-scale-5 .tally-count { font-size:4px; }
+    .print-scale-5 .tally-btn { width:9px; height:9px; font-size:6px; }
+    .print-scale-5 .plt-tare-input { width:24px; font-size:5px; }
+    .print-scale-5 .plt-total-val { font-size:6px; }
+    .print-scale-5 .plt-label { font-size:5px; padding:1px; }
+    .print-scale-5 tbody td { padding:1px 1.5px; }
+    .print-scale-5 .check-box { width:7px; height:7px; }
+    .print-scale-5 thead th[id^="plt-th-"] { width:48px !important; }
   }
   .print-header { display:none; }
 </style>
@@ -373,19 +404,80 @@ function renderTableHeaders() {
   pltCount = 1;
   if (currentMode==='sea') {
     tr.innerHTML = `
-      <th style="width:32px">#</th><th style="min-width:90px">Shipment #</th><th style="min-width:110px">Internal ID</th><th style="min-width:90px">Receiver</th>
-      <th>Location</th><th class="center" style="width:50px">PCS</th>
+      <th style="width:32px">#</th>
+      ${sortableHeader('Shipment #',0,'min-width:90px')}
+      ${sortableHeader('Internal ID',1,'min-width:110px')}
+      ${sortableHeader('Receiver',2,'min-width:90px')}
+      ${sortableHeader('Location',3,'')}
+      ${sortableHeader('PCS',4,'width:50px','center','num')}
       <th>Piece Breakdown</th><th class="center" style="width:60px">Stickered</th>
       <th class="center" style="width:130px">Packed</th>`;
   } else {
     tr.innerHTML = `
-      <th style="width:32px">#</th><th style="min-width:90px">Shipment #</th><th style="min-width:110px">Internal ID</th><th style="min-width:90px">Receiver</th>
-      <th>Location</th><th class="center" style="width:50px">PCE's</th>
-      <th class="center" style="width:65px">KG</th>
+      <th style="width:32px">#</th>
+      ${sortableHeader('Shipment #',0,'min-width:90px')}
+      ${sortableHeader('Internal ID',1,'min-width:110px')}
+      ${sortableHeader('Receiver',2,'min-width:90px')}
+      ${sortableHeader('Location',3,'')}
+      ${sortableHeader("PCE's",4,'width:50px','center','num')}
+      ${sortableHeader('KG',5,'width:65px','center','num')}
       <th class="center" style="width:60px">Lithium</th>
       <th class="center" style="width:60px">Loose</th>
       ${pltHeaderHTML(1)}`;
   }
+}
+
+function sortableHeader(label, colIndex, widthStyle, align='', type='text') {
+  const combinedStyle = `cursor:pointer;user-select:none;${widthStyle||''}`;
+  const cls = align ? `class="${align}"` : '';
+  return `<th style="${combinedStyle}" ${cls} onclick="sortByColumn(${colIndex},'${type}')" data-sort-col="${colIndex}">
+    <span style="display:inline-flex;align-items:center;gap:3px">${label}<span id="sort-arrow-${colIndex}" style="font-size:9px;opacity:0.5">⇕</span></span>
+  </th>`;
+}
+
+let sortState = { col: null, asc: true };
+
+function sortByColumn(colIndex, type) {
+  const tbody = document.getElementById('freight-body');
+  const rows = Array.from(tbody.querySelectorAll('tr[id^="row-"]'));
+  if (rows.length === 0) return;
+
+  // Toggle direction if same column clicked again
+  if (sortState.col === colIndex) sortState.asc = !sortState.asc;
+  else { sortState.col = colIndex; sortState.asc = true; }
+
+  function getCellValue(row, idx) {
+    // +1 because first <td> is the row number
+    const cell = row.children[idx + 1];
+    if (!cell) return '';
+    const input = cell.querySelector('input');
+    if (input) return input.value || '';
+    return cell.textContent || '';
+  }
+
+  rows.sort((a, b) => {
+    let va = getCellValue(a, colIndex);
+    let vb = getCellValue(b, colIndex);
+    if (type === 'num') {
+      va = parseFloat(va) || 0;
+      vb = parseFloat(vb) || 0;
+      return sortState.asc ? va - vb : vb - va;
+    }
+    va = va.toString().toLowerCase();
+    vb = vb.toString().toLowerCase();
+    if (va < vb) return sortState.asc ? -1 : 1;
+    if (va > vb) return sortState.asc ? 1 : -1;
+    return 0;
+  });
+
+  rows.forEach(row => tbody.appendChild(row));
+
+  // Update sort arrows
+  document.querySelectorAll('[id^="sort-arrow-"]').forEach(el => { el.textContent='⇕'; el.style.opacity='0.5'; });
+  const activeArrow = document.getElementById(`sort-arrow-${colIndex}`);
+  if (activeArrow) { activeArrow.textContent = sortState.asc ? '▲' : '▼'; activeArrow.style.opacity = '1'; }
+
+  saveState();
 }
 
 function pltHeaderHTML(p) {
@@ -673,11 +765,12 @@ function clearRows() {
 
 // ── SMART PRINT (auto-scale for many columns) ───────────────────
 function smartPrint() {
-  document.body.classList.remove('print-scale-1','print-scale-2','print-scale-3');
+  document.body.classList.remove('print-scale-1','print-scale-2','print-scale-3','print-scale-4','print-scale-5');
   if (currentMode === 'air') {
-    // Sea mode has a fixed number of columns; air mode grows with pltCount
-    if (pltCount >= 6) document.body.classList.add('print-scale-3');
-    else if (pltCount >= 4) document.body.classList.add('print-scale-2');
+    if (pltCount >= 9) document.body.classList.add('print-scale-5');
+    else if (pltCount >= 7) document.body.classList.add('print-scale-4');
+    else if (pltCount >= 5) document.body.classList.add('print-scale-3');
+    else if (pltCount >= 3) document.body.classList.add('print-scale-2');
     else if (pltCount >= 2) document.body.classList.add('print-scale-1');
   }
   window.print();
