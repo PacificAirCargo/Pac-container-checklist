@@ -102,6 +102,8 @@
     .empty-state .icon { font-size:32px; margin-bottom:10px; }
   }
 
+  @page { size: landscape; margin: 10mm; }
+
   @media print {
     body { background:white; font-size:10px; }
     .screen-header,.save-btn,.add-row-btn,.plt-actions,.print-tip,.group-bar,.status-msg,.tally-btn { display:none !important; }
@@ -146,6 +148,32 @@
     .progress-bar-wrap { display:none; }
     .notes-area { padding:7px 10px; font-size:9px; min-height:30px; border:none; }
     .empty-state { display:none; }
+
+    /* Dynamic shrink based on number of PLT columns (added via JS before printing) */
+    .print-scale-1 table { font-size:9px; }
+    .print-scale-1 thead th { font-size:8px; padding:5px 6px; }
+    .print-scale-1 .tally-marks { font-size:10px; }
+    .print-scale-1 .plt-tare-input { width:50px; font-size:9px; }
+
+    .print-scale-2 table { font-size:8px; }
+    .print-scale-2 thead th { font-size:7px; padding:4px 4px; }
+    .print-scale-2 .tally-marks { font-size:9px; }
+    .print-scale-2 .tally-count { font-size:7px; }
+    .print-scale-2 .plt-tare-input { width:42px; font-size:8px; }
+    .print-scale-2 .plt-total-val { font-size:9px; }
+    .print-scale-2 .plt-label { font-size:8px; padding:2px 3px; }
+    .print-scale-2 tbody td { padding:3px 4px; }
+
+    .print-scale-3 table { font-size:7px; }
+    .print-scale-3 thead th { font-size:6.5px; padding:3px 3px; }
+    .print-scale-3 .tally-marks { font-size:7.5px; }
+    .print-scale-3 .tally-count { font-size:6px; }
+    .print-scale-3 .tally-btn { width:14px; height:14px; font-size:9px; }
+    .print-scale-3 .plt-tare-input { width:36px; font-size:7px; }
+    .print-scale-3 .plt-total-val { font-size:8px; }
+    .print-scale-3 .plt-label { font-size:7px; padding:1px 2px; }
+    .print-scale-3 tbody td { padding:2px 3px; }
+    .print-scale-3 .check-box { width:10px; height:10px; }
   }
   .print-header { display:none; }
 </style>
@@ -168,7 +196,7 @@
     <button class="clear-btn" onclick="clearDetails()">✕ Clear Details</button>
     <button class="clear-btn" id="backup-btn" onclick="manualSave()" style="background:transparent;border-color:rgba(255,255,255,0.4);color:white">💾 Backup Save</button>
     <span id="autosave-indicator" style="color:rgba(255,255,255,0.5);font-size:11px;font-weight:500;white-space:nowrap"></span>
-    <button class="save-btn" onclick="window.print()">⬇ Save as PDF</button>
+    <button class="save-btn" onclick="smartPrint()">⬇ Save as PDF</button>
   </div>
 </div>
 
@@ -641,6 +669,18 @@ function clearRows() {
   document.getElementById('freight-body').innerHTML=`<tr><td colspan="12"><div class="empty-state"><div class="icon">📦</div>Select a group above and tap Load Freight</div></td></tr>`;
   document.getElementById('tfoot').innerHTML='';
   rowCount=0; tallyData={};
+}
+
+// ── SMART PRINT (auto-scale for many columns) ───────────────────
+function smartPrint() {
+  document.body.classList.remove('print-scale-1','print-scale-2','print-scale-3');
+  if (currentMode === 'air') {
+    // Sea mode has a fixed number of columns; air mode grows with pltCount
+    if (pltCount >= 6) document.body.classList.add('print-scale-3');
+    else if (pltCount >= 4) document.body.classList.add('print-scale-2');
+    else if (pltCount >= 2) document.body.classList.add('print-scale-1');
+  }
+  window.print();
 }
 
 // ── AUTOSAVE / RESTORE ──────────────────────────────────────────
