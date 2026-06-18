@@ -99,7 +99,7 @@
     .progress-bar-bg { background:rgba(255,255,255,0.2); border-radius:99px; height:6px; overflow:hidden; }
     .progress-bar-fill { background:var(--yellow); height:100%; border-radius:99px; transition:width 0.3s; }
     .progress-label { font-size:11px; color:var(--sky); margin-bottom:4px; font-weight:600; text-transform:uppercase; }
-    .notes-area { width:100%; border:none; padding:14px 18px; font-size:13px; color:var(--text); resize:vertical; min-height:70px; outline:none; background:white; }
+    .notes-area { width:100%; border:none; padding:14px 18px; font-size:13px; color:var(--text); resize:vertical; min-height:70px; outline:none; background:white; overflow:hidden; font-family:'Inter',sans-serif; line-height:1.5; }
     .print-tip { text-align:center; color:var(--muted); font-size:12px; margin-top:8px; }
     .empty-state { text-align:center; padding:40px 20px; color:var(--muted); font-size:13px; }
     .empty-state .icon { font-size:32px; margin-bottom:10px; }
@@ -156,7 +156,7 @@
     .total-label { color:#29ABE2 !important; font-size:8px; font-weight:700; text-transform:uppercase; }
     .total-value { font-weight:700; font-size:12px; }
     .progress-bar-wrap { display:none; }
-    .notes-area { padding:7px 10px; font-size:9px; min-height:30px; border:none; }
+    .notes-area { padding:7px 10px; font-size:9px; min-height:auto; border:none; height:auto !important; overflow:visible; white-space:pre-wrap; word-wrap:break-word; }
     .empty-state { display:none; }
 
     /* Dynamic shrink based on number of PLT columns (added via JS before printing) */
@@ -287,7 +287,7 @@
 
   <div class="card">
     <div class="card-header">Notes</div>
-    <textarea class="notes-area" placeholder="Any additional notes..."></textarea>
+    <textarea class="notes-area" id="notes-textarea" placeholder="Any additional notes..." oninput="autoResizeNotes(this)" rows="3"></textarea>
   </div>
   <div class="print-tip">Tap "Save as PDF" → Save to Files or Print from the share sheet</div>
 </div>
@@ -850,6 +850,11 @@ function clearRows() {
 }
 
 // ── SMART PRINT (auto-scale for many columns) ───────────────────
+function autoResizeNotes(el) {
+  el.style.height = 'auto';
+  el.style.height = (el.scrollHeight) + 'px';
+}
+
 function smartPrint() {
   const rows = document.getElementById('freight-body').querySelectorAll('tr[id^="row-"]');
   if (rows.length > 0 && !isFullyPacked()) {
@@ -866,6 +871,8 @@ function smartPrint() {
     return;
   }
   document.body.classList.remove('print-scale-1','print-scale-2','print-scale-3','print-scale-4','print-scale-5');
+  const notesEl = document.getElementById('notes-textarea');
+  if (notesEl) autoResizeNotes(notesEl);
   if (currentMode === 'air') {
     if (pltCount >= 9) document.body.classList.add('print-scale-5');
     else if (pltCount >= 7) document.body.classList.add('print-scale-4');
@@ -954,7 +961,7 @@ function restoreState(state) {
     if (el) el.value = state.detailFields[id];
   });
   const notesEl = document.querySelector('.notes-area');
-  if (notesEl) notesEl.value = state.notes || '';
+  if (notesEl) { notesEl.value = state.notes || ''; autoResizeNotes(notesEl); }
 
   // Restore table HTML directly (preserves all input values & tally visuals)
   document.getElementById('thead-row').innerHTML = state.theadHTML;
