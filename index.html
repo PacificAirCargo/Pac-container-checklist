@@ -788,8 +788,14 @@ function updateTotals() {
       totalKg += parseFloat(row.dataset.freightkg||0)||0;
       const lithVal = row.querySelector('.lithium-input')?.value?.trim();
       const looseVal = row.querySelector('.loose-input')?.value?.trim();
-      if (lithVal) lithiumCount++;
-      if (looseVal) looseCount++;
+      if (lithVal) {
+        const n = parseInt(lithVal);
+        lithiumCount += !isNaN(n) ? n : 1; // if it's a number, sum it; otherwise just count as 1 (e.g. "Y")
+      }
+      if (looseVal) {
+        const n = parseInt(looseVal);
+        looseCount += !isNaN(n) ? n : 1;
+      }
     }
   });
   document.getElementById('total-pcs').textContent = totalPcs;
