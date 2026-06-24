@@ -11,6 +11,19 @@
   body { font-family:'Inter',sans-serif; background:var(--light); color:var(--text); min-height:100vh; }
 
   @media screen {
+    #tab-bar { scrollbar-width:none; }
+    #tab-bar::-webkit-scrollbar { display:none; }
+    .tab-item { display:flex; align-items:center; gap:6px; padding:8px 14px 9px; background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.6); border-radius:8px 8px 0 0; cursor:pointer; font-size:12px; font-weight:600; white-space:nowrap; border:1px solid rgba(255,255,255,0.1); border-bottom:none; transition:all 0.15s; margin-top:6px; user-select:none; }
+    .tab-item:hover { background:rgba(255,255,255,0.14); color:white; }
+    .tab-item.active { background:var(--light); color:var(--navy); border-color:transparent; }
+    .tab-item .tab-close { font-size:14px; line-height:1; opacity:0.5; padding:0 2px; }
+    .tab-item .tab-close:hover { opacity:1; color:#e74c3c; }
+    .tab-add { padding:8px 12px 9px; background:transparent; color:rgba(255,255,255,0.5); border:none; font-size:20px; cursor:pointer; margin-top:6px; line-height:1; }
+    .tab-add:hover { color:white; }
+    .tab-dot { width:7px; height:7px; border-radius:50%; background:var(--green); flex-shrink:0; }
+    .tab-dot.empty { background:rgba(255,255,255,0.25); }
+    .tab-dot.overpacked { background:#e74c3c; }
+  }
     .screen-header { background:var(--navy); padding:16px 24px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
     .logo-area { display:flex; align-items:center; gap:12px; }
     .logo-box { background:var(--sky); color:white; font-weight:700; font-size:13px; letter-spacing:1.5px; padding:6px 10px; border-radius:4px; }
@@ -110,6 +123,7 @@
   @media print {
     body { background:white; font-size:10px; }
     .screen-header,.save-btn,.add-row-btn,.plt-actions,.print-tip,.group-bar,.status-msg,.tally-btn { display:none !important; }
+    #tab-bar { display:none !important; }
     [id^="sort-arrow-"] { display:none !important; }
     thead th { cursor:default !important; }
     .container { max-width:100%; padding:0; margin:0; }
@@ -234,6 +248,10 @@
     <span id="autosave-indicator" style="color:rgba(255,255,255,0.5);font-size:11px;font-weight:500;white-space:nowrap"></span>
     <button class="save-btn" id="print-btn" onclick="smartPrint()">⬇ Save as PDF</button>
   </div>
+</div>
+
+<div id="tab-bar" style="background:#162960;padding:0 16px;display:flex;align-items:flex-end;gap:4px;overflow-x:auto;border-bottom:2px solid rgba(255,255,255,0.1)">
+  <!-- Tabs rendered here by JS -->
 </div>
 
 <div class="container">
@@ -361,12 +379,6 @@ async function loadGroup() {
 }
 
 // ── CLEAR DETAILS ────────────────────────────────────────────────
-function clearDetails() {
-  const confirmed = confirm('Are you sure you want to clear all details?\n\nThis will reset everything and refresh the page. This cannot be undone.');
-  if (!confirmed) return;
-  try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
-  location.reload();
-}
 
 // ── MODE ─────────────────────────────────────────────────────────
 function setMode(mode) {
@@ -386,7 +398,7 @@ function renderDetailsGrid() {
   const g = document.getElementById('details-grid');
   if (currentMode==='sea') {
     g.innerHTML = `
-      <div class="field-group"><div class="field-label">Consol #</div><input class="field-input" id="f-consol" type="text" placeholder="e.g. BNESYD00123"></div>
+      <div class="field-group"><div class="field-label">Consol #</div><input class="field-input" id="f-consol" type="text" placeholder="e.g. BNESYD00123" oninput="onConsolInput()"></div>
       <div class="field-group"><div class="field-label">Destination</div><input class="field-input" id="f-dest" type="text" placeholder="e.g. POM"></div>
       <div class="field-group"><div class="field-label">Container #</div><input class="field-input" id="f-cont" type="text" placeholder="e.g. TCKU1234567"></div>
       <div class="field-group"><div class="field-label">Container Size</div><input class="field-input" id="f-size" type="text" placeholder="e.g. 20FT"></div>
@@ -397,7 +409,7 @@ function renderDetailsGrid() {
       <div class="field-group"><div class="field-label">Supervised By</div><input class="field-input" id="f-supervisedby" type="text" placeholder="Name"></div>`;
   } else {
     g.innerHTML = `
-      <div class="field-group"><div class="field-label">Consol #</div><input class="field-input" id="f-consol" type="text" placeholder="e.g. BNESYD00123"></div>
+      <div class="field-group"><div class="field-label">Consol #</div><input class="field-input" id="f-consol" type="text" placeholder="e.g. BNESYD00123" oninput="onConsolInput()"></div>
       <div class="field-group"><div class="field-label">Destination</div><input class="field-input" id="f-dest" type="text" placeholder="e.g. POM"></div>
       <div class="field-group"><div class="field-label">Date</div><input class="field-input" id="f-date" type="text" value="${new Date().toLocaleDateString('en-AU')}"></div>
       <div class="field-group"><div class="field-label">Packed By</div><input class="field-input" id="f-packedby" type="text" placeholder="Name"></div>`;
@@ -889,23 +901,24 @@ function smartPrint() {
   window.print();
 }
 
-// ── AUTOSAVE / RESTORE ──────────────────────────────────────────
-const SAVE_KEY = 'pac_pack_checklist_save_v1';
+// ── TAB SYSTEM ──────────────────────────────────────────────────
+const TABS_KEY = 'pac_pack_tabs_v1';
+let tabs = [];
+let activeTabId = null;
+let tabCounter = 0;
 
 function collectState() {
   const detailFields = {};
   document.getElementById('details-grid').querySelectorAll('.field-input').forEach(input => {
     detailFields[input.id] = input.value;
   });
-  const notes = document.querySelector('.notes-area')?.value || '';
-
   return {
     mode: currentMode,
     pltCount: pltCount,
     rowCount: rowCount,
     tallyData: tallyData,
     detailFields: detailFields,
-    notes: notes,
+    notes: document.querySelector('.notes-area')?.value || '',
     freightBodyHTML: document.getElementById('freight-body').innerHTML,
     tfootHTML: document.getElementById('tfoot').innerHTML,
     theadHTML: document.getElementById('thead-row').innerHTML,
@@ -914,17 +927,192 @@ function collectState() {
   };
 }
 
-function saveState() {
+function restoreState(state) {
+  currentMode = state.mode || 'sea';
+  pltCount = state.pltCount || 1;
+  rowCount = state.rowCount || 0;
+  tallyData = state.tallyData || {};
+
+  document.getElementById('btn-sea').classList.toggle('active', currentMode==='sea');
+  document.getElementById('btn-air').classList.toggle('active', currentMode==='air');
+  document.getElementById('mode-subtitle').textContent = currentMode==='sea'?'Container Pack Checklist':'Air Freight Pack Checklist';
+  document.getElementById('print-title').textContent = currentMode==='sea'?'Container Pack Checklist':'Air Freight Pack Checklist';
+  document.getElementById('details-header').textContent = currentMode==='sea'?'Container Details':'Consignment Details';
+  document.getElementById('plt-actions').style.display = currentMode==='air'?'flex':'none';
+  document.getElementById('row-actions').style.display = currentMode==='air'?'none':'flex';
+
+  renderDetailsGrid();
+  Object.keys(state.detailFields||{}).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = state.detailFields[id];
+  });
+  const notesEl = document.querySelector('.notes-area');
+  if (notesEl) { notesEl.value = state.notes || ''; autoResizeNotes(notesEl); }
+
+  document.getElementById('thead-row').innerHTML = state.theadHTML || '';
+  document.getElementById('freight-body').innerHTML = state.freightBodyHTML || `<tr><td colspan="12"><div class="empty-state"><div class="icon">📦</div>Select a group above and tap Load Freight</div></td></tr>`;
+  document.getElementById('tfoot').innerHTML = state.tfootHTML || '';
+
+  lastLoadedGroupName = state.groupName || '';
+  document.getElementById('print-group-name').textContent = lastLoadedGroupName;
+
+  updateTotals();
+  if (currentMode==='air') updateFooter();
+  renderTotalsBar();
+  updateTotals();
+}
+
+
+function tabsKey() { return TABS_KEY; }
+
+function saveTabs() {
+  try { localStorage.setItem(TABS_KEY, JSON.stringify({ tabs, activeTabId })); } catch(e) {}
+}
+
+function loadTabsFromStorage() {
   try {
-    const state = collectState();
-    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
-    const ind = document.getElementById('autosave-indicator');
-    if (ind) {
-      ind.textContent = '✓ Saved';
-      clearTimeout(window._autosaveIndTimeout);
-      window._autosaveIndTimeout = setTimeout(() => { if(ind) ind.textContent=''; }, 1500);
-    }
-  } catch(e) { /* storage full or unavailable - fail silently */ }
+    const raw = localStorage.getItem(TABS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return null;
+}
+
+function generateTabId() { return 'tab_' + Date.now() + '_' + (++tabCounter); }
+
+function getTabLabel() {
+  const consolEl = document.getElementById('f-consol');
+  const val = consolEl?.value?.trim();
+  return val || 'New Pack';
+}
+
+function renderTabBar() {
+  const bar = document.getElementById('tab-bar');
+  bar.innerHTML = '';
+  tabs.forEach(tab => {
+    const item = document.createElement('div');
+    item.className = 'tab-item' + (tab.id === activeTabId ? ' active' : '');
+    item.dataset.tabId = tab.id;
+
+    // Status dot
+    const dot = document.createElement('span');
+    dot.className = 'tab-dot';
+    const s = tab.state;
+    const hasRows = s?.freightBodyHTML && !s.freightBodyHTML.includes('empty-state');
+    if (!hasRows) dot.classList.add('empty');
+    item.appendChild(dot);
+
+    // Label
+    const lbl = document.createElement('span');
+    lbl.textContent = tab.label || 'New Pack';
+    item.appendChild(lbl);
+
+    // Close button
+    const cls = document.createElement('span');
+    cls.className = 'tab-close';
+    cls.textContent = '×';
+    cls.onclick = (e) => { e.stopPropagation(); closeTab(tab.id); };
+    item.appendChild(cls);
+
+    item.onclick = () => switchTab(tab.id);
+    bar.appendChild(item);
+  });
+
+  // Add new tab button
+  const addBtn = document.createElement('button');
+  addBtn.className = 'tab-add';
+  addBtn.textContent = '+';
+  addBtn.title = 'New pack';
+  addBtn.onclick = addTab;
+  bar.appendChild(addBtn);
+}
+
+function saveCurrentTab() {
+  if (!activeTabId) return;
+  const tab = tabs.find(t => t.id === activeTabId);
+  if (!tab) return;
+  tab.state = collectState();
+  tab.label = getTabLabel();
+  saveTabs();
+}
+
+function addTab() {
+  saveCurrentTab();
+  const id = generateTabId();
+  tabs.push({ id, label: 'New Pack', state: null });
+  activeTabId = id;
+  saveTabs();
+  // Reset UI to blank
+  setMode('sea');
+  clearRows();
+  renderDetailsGrid();
+  document.querySelector('.notes-area').value = '';
+  document.getElementById('status-msg').textContent = '';
+  renderTabBar();
+  updatePackCompletionState();
+}
+
+function switchTab(id) {
+  if (id === activeTabId) return;
+  saveCurrentTab();
+  activeTabId = id;
+  saveTabs();
+  const tab = tabs.find(t => t.id === id);
+  if (tab?.state) {
+    restoreState(tab.state);
+  } else {
+    setMode('sea');
+    clearRows();
+    renderDetailsGrid();
+    document.querySelector('.notes-area').value = '';
+  }
+  renderTabBar();
+}
+
+function closeTab(id) {
+  const tab = tabs.find(t => t.id === id);
+  const label = tab?.label || 'this pack';
+  if (!confirm(`Close "${label}"?\n\nThis pack will be removed and cannot be recovered.`)) return;
+  const idx = tabs.findIndex(t => t.id === id);
+  tabs.splice(idx, 1);
+  if (tabs.length === 0) {
+    // Always keep at least one tab
+    const newId = generateTabId();
+    tabs.push({ id: newId, label: 'New Pack', state: null });
+    activeTabId = newId;
+    setMode('sea');
+    clearRows();
+    renderDetailsGrid();
+    document.querySelector('.notes-area').value = '';
+  } else {
+    // Switch to adjacent tab
+    const newIdx = Math.min(idx, tabs.length - 1);
+    activeTabId = tabs[newIdx].id;
+    const newTab = tabs[newIdx];
+    if (newTab.state) restoreState(newTab.state);
+    else { setMode('sea'); clearRows(); renderDetailsGrid(); document.querySelector('.notes-area').value = ''; }
+  }
+  saveTabs();
+  renderTabBar();
+}
+
+// Update tab label live as Consol # is typed
+function onConsolInput() {
+  const tab = tabs.find(t => t.id === activeTabId);
+  if (tab) {
+    tab.label = getTabLabel();
+    renderTabBar();
+  }
+}
+
+// ── AUTOSAVE ────────────────────────────────────────────────────
+function saveState() {
+  saveCurrentTab();
+  const ind = document.getElementById('autosave-indicator');
+  if (ind) {
+    ind.textContent = '✓ Saved';
+    clearTimeout(window._autosaveIndTimeout);
+    window._autosaveIndTimeout = setTimeout(() => { if(ind) ind.textContent=''; }, 1500);
+  }
 }
 
 function manualSave() {
@@ -945,66 +1133,47 @@ function manualSave() {
   }
 }
 
-function restoreState(state) {
-  // Restore mode first (without resetting rows)
-  currentMode = state.mode;
-  pltCount = state.pltCount || 1;
-  rowCount = state.rowCount || 0;
-  tallyData = state.tallyData || {};
-
-  document.getElementById('btn-sea').classList.toggle('active', currentMode==='sea');
-  document.getElementById('btn-air').classList.toggle('active', currentMode==='air');
-  document.getElementById('mode-subtitle').textContent = currentMode==='sea'?'Container Pack Checklist':'Air Freight Pack Checklist';
-  document.getElementById('print-title').textContent = currentMode==='sea'?'Container Pack Checklist':'Air Freight Pack Checklist';
-  document.getElementById('details-header').textContent = currentMode==='sea'?'Container Details':'Consignment Details';
-  document.getElementById('plt-actions').style.display = currentMode==='air'?'flex':'none';
-  document.getElementById('row-actions').style.display = currentMode==='air'?'none':'flex';
-
+function clearDetails() {
+  const confirmed = confirm('Are you sure you want to clear all details?\n\nThis will reset everything and start a fresh pack on this tab.');
+  if (!confirmed) return;
+  const tab = tabs.find(t => t.id === activeTabId);
+  if (tab) { tab.state = null; tab.label = 'New Pack'; }
+  setMode('sea');
+  clearRows();
   renderDetailsGrid();
-  // Restore detail field values
-  Object.keys(state.detailFields||{}).forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = state.detailFields[id];
-  });
-  const notesEl = document.querySelector('.notes-area');
-  if (notesEl) { notesEl.value = state.notes || ''; autoResizeNotes(notesEl); }
-
-  // Restore table HTML directly (preserves all input values & tally visuals)
-  document.getElementById('thead-row').innerHTML = state.theadHTML;
-  document.getElementById('freight-body').innerHTML = state.freightBodyHTML;
-  document.getElementById('tfoot').innerHTML = state.tfootHTML;
-
-  lastLoadedGroupName = state.groupName || '';
-  document.getElementById('print-group-name').textContent = lastLoadedGroupName;
-
-  updateTotals();
-  if (currentMode==='air') updateFooter();
+  document.querySelector('.notes-area').value = '';
+  saveTabs();
+  renderTabBar();
 }
 
-function initAutosave() {
-  // Check for saved session
-  let saved = null;
-  try {
-    const raw = localStorage.getItem(SAVE_KEY);
-    if (raw) saved = JSON.parse(raw);
-  } catch(e) { saved = null; }
-
-  if (saved && saved.freightBodyHTML && !saved.freightBodyHTML.includes('empty-state')) {
-    const groupLabel = saved.groupName ? `"${saved.groupName}"` : 'a previous session';
-    const wantsRestore = confirm(`A saved checklist was found for ${groupLabel}.\n\nRestore your previous work?`);
-    if (wantsRestore) {
-      restoreState(saved);
+function initTabs() {
+  const saved = loadTabsFromStorage();
+  if (saved && saved.tabs && saved.tabs.length > 0) {
+    tabs = saved.tabs;
+    activeTabId = saved.activeTabId || tabs[0].id;
+    // Restore active tab
+    const activeTab = tabs.find(t => t.id === activeTabId);
+    if (activeTab?.state) {
+      restoreState(activeTab.state);
     } else {
-      localStorage.removeItem(SAVE_KEY);
+      setMode('sea');
     }
+  } else {
+    // Fresh start — create first tab
+    const id = generateTabId();
+    tabs = [{ id, label: 'New Pack', state: null }];
+    activeTabId = id;
+    setMode('sea');
+    saveTabs();
   }
+  renderTabBar();
 
-  // Attach autosave listeners: any input/change/click anywhere in the container triggers a save
+  // Attach autosave listeners
   const container = document.querySelector('.container');
   let saveTimeout = null;
   function scheduleSave() {
     clearTimeout(saveTimeout);
-    saveTimeout = setTimeout(saveState, 400); // debounce so it doesn't save on every keystroke
+    saveTimeout = setTimeout(saveState, 400);
   }
   container.addEventListener('input', scheduleSave);
   container.addEventListener('click', scheduleSave);
@@ -1013,7 +1182,7 @@ function initAutosave() {
 // ── INIT ─────────────────────────────────────────────────────────
 setMode('sea');
 loadGroups();
-initAutosave();
+initTabs();
 
 </script>
 </body>
