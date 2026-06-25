@@ -24,7 +24,7 @@
     .tab-dot.empty { background:rgba(255,255,255,0.25); }
     .tab-dot.overpacked { background:#e74c3c; }
   }
-    .screen-header { background:var(--navy); padding:16px 24px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+    .screen-header { background:var(--navy); padding:16px 24px; display:flex; align-items:center; justify-content:space-between; gap:16px; position:sticky; top:0; z-index:100; }
     .logo-area { display:flex; align-items:center; gap:12px; }
     .logo-box { background:var(--sky); color:white; font-weight:700; font-size:13px; letter-spacing:1.5px; padding:6px 10px; border-radius:4px; }
     .logo-title { color:white; font-size:15px; font-weight:600; }
@@ -56,8 +56,8 @@
     .field-label { font-size:10px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px; }
     .field-input { width:100%; border:none; border-bottom:2px solid var(--border); padding:4px 0; font-size:14px; font-family:'Roboto Mono',monospace; font-weight:500; color:var(--text); background:transparent; outline:none; transition:border-color 0.15s; }
     .field-input:focus { border-bottom-color:var(--sky); }
-    .table-scroll { overflow-x:auto; max-height:65vh; overflow-y:auto; }
-    thead th { position:sticky; top:0; z-index:5; }
+    .table-scroll { overflow-x:auto; }
+    thead th { position:sticky; top:110px; z-index:5; box-shadow:0 1px 0 rgba(255,255,255,0.1); }
     table { width:100%; border-collapse:collapse; font-size:13px; }
     thead tr { background:var(--navy); color:white; }
     thead th { padding:8px 10px; text-align:left; font-size:11px; font-weight:600; letter-spacing:0.5px; text-transform:uppercase; white-space:nowrap; vertical-align:top; background:var(--navy); }
@@ -145,8 +145,11 @@
     /* Base print: shrink PLT columns from 140px */
     thead th[id^="plt-th-"] { width:100px !important; }
     thead th { min-width:0 !important; }
-    thead { display:table-header-group; }
-    thead tr { background:#1B3172 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; break-inside:avoid; }
+    thead { display:table-header-group !important; }
+    thead tr { background:#1B3172 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; break-inside:avoid; break-after:avoid; page-break-after:avoid; }
+    /* Prevent page break between header and first data row */
+    thead tr th { page-break-after:avoid; }
+    tbody tr:first-child { page-break-before:avoid; }
     thead th { color:white !important; padding:5px 6px; font-size:8px; font-weight:700; text-transform:uppercase; text-align:left; vertical-align:top; }
     thead th.center { text-align:center; }
     tbody tr { border-bottom:1px solid #ddd; }
@@ -269,7 +272,7 @@
   </div>
 </div>
 
-<div id="tab-bar" style="background:#162960;padding:0 16px;display:flex;align-items:flex-end;gap:4px;overflow-x:auto;border-bottom:2px solid rgba(255,255,255,0.1)">
+<div id="tab-bar" style="background:#162960;padding:0 16px;display:flex;align-items:flex-end;gap:4px;overflow-x:auto;border-bottom:2px solid rgba(255,255,255,0.1);position:sticky;top:var(--header-h,64px);z-index:99;">
   <!-- Tabs rendered here by JS -->
 </div>
 
@@ -986,7 +989,15 @@ function collectState() {
     tfootHTML: document.getElementById('tfoot').innerHTML,
     theadHTML: document.getElementById('thead-row').innerHTML,
     groupName: lastLoadedGroupName,
-    savedAt: new Date().toISOString()
+    savedAt: new Date().toISOString(),
+    pltWeights: (()=>{
+      const w={};
+      for(let p=1;p<=pltCount;p++){
+        w[`tare-${p}`]=document.getElementById(`tare-plt-${p}`)?.value||'';
+        w[`total-${p}`]=document.getElementById(`plt-total-input-${p}`)?.value||'';
+      }
+      return w;
+    })()
   };
 }
 
@@ -1020,7 +1031,18 @@ function restoreState(state) {
   document.getElementById('print-group-name').textContent = lastLoadedGroupName;
 
   updateTotals();
-  if (currentMode==='air') updateFooter();
+  if (currentMode==='air') {
+    updateFooter();
+    // Restore PLT weight values after footer is rebuilt
+    const pw = state.pltWeights || {};
+    Object.keys(pw).forEach(k => {
+      const match = k.match(/^(tare|total)-(\d+)$/);
+      if (!match) return;
+      const id = match[1]==='tare' ? `tare-plt-${match[2]}` : `plt-total-input-${match[2]}`;
+      const el = document.getElementById(id);
+      if (el && pw[k]) el.value = pw[k];
+    });
+  }
   renderTotalsBar();
   updateTotals();
 }
