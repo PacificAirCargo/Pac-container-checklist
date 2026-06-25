@@ -110,7 +110,7 @@
     .total-value { font-family:'Roboto Mono',monospace; font-weight:700; font-size:16px; }
     .progress-bar-wrap { flex:1; min-width:120px; }
     .progress-bar-bg { background:rgba(255,255,255,0.2); border-radius:99px; height:6px; overflow:hidden; }
-    .progress-bar-fill { background:var(--yellow); height:100%; border-radius:99px; transition:width 0.3s; }
+    .progress-bar-fill { background:#e74c3c; height:100%; border-radius:99px; transition:width 0.3s, background 0.4s; }
     .progress-label { font-size:11px; color:var(--sky); margin-bottom:4px; font-weight:600; text-transform:uppercase; }
     .notes-area { width:100%; border:none; padding:14px 18px; font-size:13px; color:var(--text); resize:vertical; min-height:70px; outline:none; background:white; overflow:hidden; font-family:'Inter',sans-serif; line-height:1.5; }
     .print-tip { text-align:center; color:var(--muted); font-size:12px; margin-top:8px; }
@@ -514,7 +514,8 @@ function renderTotalsBar() {
       <div class="total-item"><span class="total-label">Total PCE's</span><span class="total-value" id="total-pcs">0</span></div>
       <div class="total-item"><span class="total-label">Total KG</span><span class="total-value" id="total-kg">0</span></div>
       <div class="total-item"><span class="total-label">Lithium Items</span><span class="total-value" id="total-lithium">0</span></div>
-      <div class="total-item"><span class="total-label">Loose Items</span><span class="total-value" id="total-loose">0</span></div>
+      <div class="total-item"><span class="total-label">Total Pallets</span><span class="total-value" id="total-pallets">0</span></div>
+      <div class="total-item"><span class="total-label">Total Weight incl PLTs</span><span class="total-value" id="total-weight-with-plts">—</span></div>
       <div class="progress-bar-wrap"><div class="progress-label">Pallet Progress</div><div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div></div>`;
   }
 }
@@ -535,13 +536,21 @@ function updateFooter() {
   for (let p=1; p<=pltCount; p++) {
     const existingTare = document.getElementById(`tare-plt-${p}`)?.value || '';
     tareCells += `<td class="center plt-footer" style="padding:6px 8px">
-      <input class="plt-tare-input" id="tare-plt-${p}" type="number" step="0.01" placeholder="0.00 kg"
-        value="${existingTare}" oninput="recalcPltTotal(${p})" title="Enter empty pallet weight">
+      <div style="display:flex;align-items:center;justify-content:center;gap:3px">
+        <input class="plt-tare-input" id="tare-plt-${p}" type="number" step="0.01" placeholder="0.00"
+          value="${existingTare}" oninput="recalcPltTotal(${p}); updateTotals();" title="Enter empty pallet weight"
+          style="width:55px">
+        <span style="color:var(--sky);font-size:10px;font-weight:600">kg</span>
+      </div>
     </td>`;
     const existingTotal = document.getElementById(`plt-total-input-${p}`)?.value || '';
     totalCells += `<td class="center plt-footer" style="padding:6px 8px">
-      <input class="plt-tare-input" id="plt-total-input-${p}" type="number" step="0.01" placeholder="enter kg"
-        value="${existingTotal}" title="Enter gross pallet weight (freight + pallet)">
+      <div style="display:flex;align-items:center;justify-content:center;gap:3px">
+        <input class="plt-tare-input" id="plt-total-input-${p}" type="number" step="0.01" placeholder="0.00"
+          value="${existingTotal}" title="Enter gross pallet weight (freight + pallet)"
+          oninput="updateTotals()" style="width:55px">
+        <span style="color:var(--sky);font-size:10px;font-weight:600">kg</span>
+      </div>
     </td>`;
     pceCells += `<td class="center plt-footer" style="padding:6px 8px">
       <div class="plt-total-val" id="plt-pce-${p}" style="color:white">—</div>
@@ -817,7 +826,7 @@ function addRow(data={}) {
 
 // ── TOTALS ───────────────────────────────────────────────────────
 function updateTotals() {
-  let totalPcs=0, packedPcs=0, totalKg=0, totalTarget=0, lithiumCount=0, looseCount=0;
+  let totalPcs=0, packedPcs=0, totalKg=0, totalTarget=0, lithiumCount=0;
   document.getElementById('freight-body').querySelectorAll('tr[id^="row-"]').forEach(row => {
     const rid = parseInt(row.id.replace('row-',''));
     const pcs = parseInt(row.querySelector('.num-input')?.value)||0;
@@ -833,10 +842,7 @@ function updateTotals() {
         const n = parseInt(lithVal);
         lithiumCount += !isNaN(n) ? n : 1; // if it's a number, sum it; otherwise just count as 1 (e.g. "Y")
       }
-      if (looseVal) {
-        const n = parseInt(looseVal);
-        looseCount += !isNaN(n) ? n : 1;
-      }
+
     }
   });
   document.getElementById('total-pcs').textContent = totalPcs;
@@ -844,14 +850,23 @@ function updateTotals() {
     document.getElementById('total-packed').textContent = packedPcs;
     document.getElementById('total-remaining').textContent = Math.max(0,totalTarget-packedPcs);
     const pct = totalTarget>0?Math.round((packedPcs/totalTarget)*100):0;
-    document.getElementById('progress-fill').style.width = Math.min(100,pct)+'%';
+    const pfSea = document.getElementById('progress-fill');
+    if (pfSea) { pfSea.style.width = Math.min(100,pct)+'%'; pfSea.style.background = pct>=100 ? 'var(--green)' : '#e74c3c'; }
   } else {
     const kgEl = document.getElementById('total-kg');
     if (kgEl) kgEl.textContent = totalKg.toFixed(2);
     const lithEl = document.getElementById('total-lithium');
     if (lithEl) lithEl.textContent = lithiumCount;
-    const looseEl = document.getElementById('total-loose');
-    if (looseEl) looseEl.textContent = looseCount;
+    // Count pallets with a gross weight entered, and sum them for total weight incl pallets
+    let packedPltCount = 0, totalWeightWithPlts = 0;
+    for (let p=1; p<=pltCount; p++) {
+      const val = parseFloat(document.getElementById(`plt-total-input-${p}`)?.value) || 0;
+      if (val > 0) { packedPltCount++; totalWeightWithPlts += val; }
+    }
+    const pltCountEl = document.getElementById('total-pallets');
+    if (pltCountEl) pltCountEl.textContent = packedPltCount;
+    const totalWEl = document.getElementById('total-weight-with-plts');
+    if (totalWEl) totalWEl.textContent = totalWeightWithPlts > 0 ? totalWeightWithPlts.toFixed(2)+' kg' : '—';
     // Progress: rows done / total rows
     let done=0, total=0;
     document.getElementById('freight-body').querySelectorAll('tr[id^="row-"]').forEach(row => {
@@ -860,7 +875,7 @@ function updateTotals() {
     });
     const pct = total>0?Math.round((done/total)*100):0;
     const pfEl = document.getElementById('progress-fill');
-    if (pfEl) pfEl.style.width = Math.min(100,pct)+'%';
+    if (pfEl) { pfEl.style.width = Math.min(100,pct)+'%'; pfEl.style.background = pct>=100 ? 'var(--green)' : '#e74c3c'; }
   }
   updatePackCompletionState();
 }
