@@ -1271,32 +1271,12 @@ function initTabs() {
   container.addEventListener('click', scheduleSave);
 }
 
-// ── STICKY HEADER OFFSET ────────────────────────────────────────
-function updateStickyOffset() {
-  const header = document.querySelector('.screen-header');
-  const tabBar = document.getElementById('tab-bar');
-  const h = (header?.offsetHeight || 0) + (tabBar?.offsetHeight || 0);
-  document.documentElement.style.setProperty('--header-h', h + 'px');
-  
-  // For thead sticky: measure distance from top of viewport to the thead row
-  const theadRow = document.getElementById('thead-row');
-  if (theadRow) {
-    const rect = theadRow.getBoundingClientRect();
-    // rect.top is where thead currently sits relative to viewport
-    // We want it to stick at exactly h px from top (below the fixed bars)
-    // So top = h
-    document.documentElement.style.setProperty('--thead-top', h + 'px');
-  } else {
-    document.documentElement.style.setProperty('--thead-top', h + 'px');
-  }
-}
+
 
 // ── INIT ─────────────────────────────────────────────────────────
 setMode('sea');
 loadGroups();
 initTabs();
-updateStickyOffset();
-window.addEventListener('resize', updateStickyOffset);
 
 </script>
 </body>
