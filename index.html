@@ -57,7 +57,7 @@
     .field-input { width:100%; border:none; border-bottom:2px solid var(--border); padding:4px 0; font-size:14px; font-family:'Roboto Mono',monospace; font-weight:500; color:var(--text); background:transparent; outline:none; transition:border-color 0.15s; }
     .field-input:focus { border-bottom-color:var(--sky); }
     .table-scroll { overflow-x:auto; }
-    thead th { position:sticky; top:110px; z-index:5; box-shadow:0 1px 0 rgba(255,255,255,0.1); }
+    thead th { position:sticky; top:var(--thead-top, 110px); z-index:5; box-shadow:0 1px 0 rgba(255,255,255,0.1); }
     table { width:100%; border-collapse:collapse; font-size:13px; }
     thead tr { background:var(--navy); color:white; }
     thead th { padding:8px 10px; text-align:left; font-size:11px; font-weight:600; letter-spacing:0.5px; text-transform:uppercase; white-space:nowrap; vertical-align:top; background:var(--navy); }
@@ -1264,10 +1264,20 @@ function initTabs() {
   container.addEventListener('click', scheduleSave);
 }
 
+// ── STICKY HEADER OFFSET ────────────────────────────────────────
+function updateStickyOffset() {
+  const header = document.querySelector('.screen-header');
+  const tabBar = document.getElementById('tab-bar');
+  const h = (header?.offsetHeight || 0) + (tabBar?.offsetHeight || 0);
+  document.documentElement.style.setProperty('--thead-top', h + 'px');
+}
+
 // ── INIT ─────────────────────────────────────────────────────────
 setMode('sea');
 loadGroups();
 initTabs();
+updateStickyOffset();
+window.addEventListener('resize', updateStickyOffset);
 
 </script>
 </body>
