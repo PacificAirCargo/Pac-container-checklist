@@ -449,7 +449,8 @@ function renderTableHeaders() {
       ${sortableHeader('Receiver',2,'min-width:90px')}
       ${sortableHeader('Location',3,'')}
       ${sortableHeader('PCS',4,'width:50px','center','num')}
-      <th>Piece Breakdown</th><th class="center" style="width:60px">Stickered</th>
+      <th>Piece Breakdown</th><th class="center" style="width:60px">Picked</th>
+      <th class="center" style="width:60px">Stickered</th>
       <th class="center" style="width:130px">Packed</th>`;
   } else {
     tr.innerHTML = `
@@ -821,6 +822,7 @@ function addRow(data={}) {
       <td><input class="td-input" type="text" value="${data.loc||''}" placeholder="e.g. D4"></td>
       <td><input class="num-input" type="number" min="0" value="${data.pcs||''}" placeholder="0" data-rid="${rid}" oninput="updateTotals();recheckSeaDone(parseInt(this.dataset.rid))"></td>
       <td><input class="td-input breakdown-input" type="text" value="${data.breakdown||''}" placeholder="e.g. 2 ctn, 1 plt" data-rid="${rid}" oninput="recheckSeaDone(parseInt(this.dataset.rid)); updateTotals()"></td>
+      <td class="center"><div class="check-cell"><div class="check-box" onclick="this.classList.toggle('checked')"></div></div></td>
       <td class="center"><div class="check-cell"><div class="check-box" onclick="this.classList.toggle('checked')"></div></div></td>
       <td class="center">${buildSeaTallyHTML(0,rid)}</td>`;
   } else {
