@@ -538,8 +538,10 @@ function updateFooter() {
       <input class="plt-tare-input" id="tare-plt-${p}" type="number" step="0.01" placeholder="0.00 kg"
         value="${existingTare}" oninput="recalcPltTotal(${p})" title="Enter empty pallet weight">
     </td>`;
+    const existingTotal = document.getElementById(`plt-total-input-${p}`)?.value || '';
     totalCells += `<td class="center plt-footer" style="padding:6px 8px">
-      <div class="plt-total-val" id="plt-total-${p}">—</div>
+      <input class="plt-tare-input" id="plt-total-input-${p}" type="number" step="0.01" placeholder="enter kg"
+        value="${existingTotal}" title="Enter gross pallet weight (freight + pallet)">
     </td>`;
     pceCells += `<td class="center plt-footer" style="padding:6px 8px">
       <div class="plt-total-val" id="plt-pce-${p}" style="color:white">—</div>
@@ -554,19 +556,12 @@ function updateFooter() {
 }
 
 function recalcPltTotal(p) {
-  // Sum KG and PCE of rows where tally for this PLT >= that row's PCE count
-  let freightTotal = 0, pceTotal = 0;
+  // Sum PCE tallied to this PLT
+  let pceTotal = 0;
   document.getElementById('freight-body').querySelectorAll('tr[id^="row-"]').forEach(row => {
     const rid = parseInt(row.id.replace('row-',''));
-    const pcs = parseInt(row.querySelector('.num-input')?.value) || 0;
-    const tally = tallyData[`${rid}-plt${p}`] || 0;
-    const kg = parseFloat(row.dataset.freightkg || 0) || 0;
-    if (pcs > 0 && tally >= pcs) { freightTotal += kg; pceTotal += pcs; }
+    pceTotal += tallyData[`${rid}-plt${p}`] || 0;
   });
-  const tare = parseFloat(document.getElementById(`tare-plt-${p}`)?.value) || 0;
-  const total = freightTotal + tare;
-  const el = document.getElementById(`plt-total-${p}`);
-  if (el) el.textContent = (freightTotal || tare) ? total.toFixed(2)+' kg' : '—';
   const pceEl = document.getElementById(`plt-pce-${p}`);
   if (pceEl) pceEl.textContent = pceTotal>0 ? pceTotal+' pcs' : '—';
 }
@@ -617,10 +612,8 @@ function removePltColumn() {
       const cell = document.getElementById(`plt-cell-${rid}-${p}`);
       if (cell) {
         cell.id = `plt-cell-${rid}-${p-1}`;
-        // Update tally key
         tallyData[`${rid}-plt${p-1}`] = tallyData[`${rid}-plt${p}`] || 0;
         delete tallyData[`${rid}-plt${p}`];
-        // Update inner tally HTML ids/onclicks
         cell.innerHTML = buildAirTallyHTML(tallyData[`${rid}-plt${p-1}`], rid, p-1);
       }
     });
@@ -667,21 +660,55 @@ function changeAirTally(rowId, pltNum, delta) {
   const key = `${rowId}-plt${pltNum}`;
   tallyData[key] = Math.max(0, (tallyData[key]||0)+delta);
   const n = tallyData[key];
-  document.getElementById(`tm-${rowId}-${pltNum}`).innerHTML = tallyVisual(n)||'—';
-  document.getElementById(`tc-${rowId}-${pltNum}`).textContent = n>0?n+' pcs':'';
+  updateAirTallyDisplay(rowId, pltNum);
   checkAirRowDone(rowId);
   recalcPltTotal(pltNum);
   updateTotals();
 }
 
+function updateAirTallyDisplay(rowId, pltNum) {
+  const n = tallyData[`${rowId}-plt${pltNum}`] || 0;
+  const row = document.getElementById(`row-${rowId}`);
+  const pcs = parseInt(row?.querySelector('.num-input')?.value) || 0;
+  // Sum all PLT tallies for this row
+  let totalTally = 0;
+  for (let p=1; p<=pltCount; p++) totalTally += tallyData[`${rowId}-plt${p}`]||0;
+  const rowDone = pcs > 0 && totalTally === pcs;
+  const marksEl = document.getElementById(`tm-${rowId}-${pltNum}`);
+  const countEl = document.getElementById(`tc-${rowId}-${pltNum}`);
+  if (!marksEl || !countEl) return;
+  if (rowDone && n > 0) {
+    // Show number only when row is fully complete
+    marksEl.innerHTML = `<span style="font-family:'Roboto Mono',monospace;font-size:15px;font-weight:700;color:var(--green)">${n}</span>`;
+    countEl.textContent = '';
+  } else {
+    marksEl.innerHTML = tallyVisual(n) || '—';
+    countEl.textContent = n>0 ? n+' pcs' : '';
+  }
+}
+
 function changeSeaTally(rowId, delta) {
   const key = `sea-${rowId}`;
   tallyData[key] = Math.max(0, (tallyData[key]||0)+delta);
-  const n = tallyData[key];
-  document.getElementById(`stm-${rowId}`).innerHTML = tallyVisual(n)||'—';
-  document.getElementById(`stc-${rowId}`).textContent = n>0?n+' pcs':'';
+  updateSeaTallyDisplay(rowId);
   recheckSeaDone(rowId);
   updateTotals();
+}
+
+function updateSeaTallyDisplay(rowId) {
+  const n = tallyData[`sea-${rowId}`] || 0;
+  const target = getSeaTarget(rowId);
+  const done = n > 0 && target > 0 && n === target;
+  const marksEl = document.getElementById(`stm-${rowId}`);
+  const countEl = document.getElementById(`stc-${rowId}`);
+  if (!marksEl || !countEl) return;
+  if (done) {
+    marksEl.innerHTML = `<span style="font-family:'Roboto Mono',monospace;font-size:15px;font-weight:700;color:var(--green)">${n}</span>`;
+    countEl.textContent = '';
+  } else {
+    marksEl.innerHTML = tallyVisual(n) || '—';
+    countEl.textContent = n>0 ? n+' pcs' : '';
+  }
 }
 
 function checkAirRowDone(rowId) {
@@ -689,14 +716,15 @@ function checkAirRowDone(rowId) {
   if (!row) return;
   const pcs = parseInt(row.querySelector('.num-input')?.value)||0;
   if (!pcs) { row.classList.remove('done-row','overpacked-row'); updateTotals(); return; }
-  let done = false, overpacked = false;
-  for (let p=1; p<=pltCount; p++) {
-    const t = tallyData[`${rowId}-plt${p}`]||0;
-    if (t >= pcs) done = true;
-    if (t > pcs) overpacked = true;
-  }
+  // Sum tallies across ALL PLTs for this row (supports split shipments)
+  let totalTally = 0;
+  for (let p=1; p<=pltCount; p++) totalTally += tallyData[`${rowId}-plt${p}`]||0;
+  const overpacked = totalTally > pcs;
+  const done = totalTally === pcs;
   row.classList.toggle('overpacked-row', overpacked);
-  row.classList.toggle('done-row', done && !overpacked);
+  row.classList.toggle('done-row', done);
+  // Refresh all PLT tally displays for this row (may switch to number or back to marks)
+  for (let p=1; p<=pltCount; p++) updateAirTallyDisplay(rowId, p);
   updateTotals();
 }
 
@@ -716,6 +744,7 @@ function recheckSeaDone(rowId) {
   const overpacked = target>0 && n>target;
   row.classList.toggle('overpacked-row', overpacked);
   row.classList.toggle('done-row', n>0 && target>0 && n>=target && !overpacked);
+  updateSeaTallyDisplay(rowId);
   updateTotals();
 }
 
