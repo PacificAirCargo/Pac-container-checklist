@@ -57,7 +57,7 @@
     .field-input { width:100%; border:none; border-bottom:2px solid var(--border); padding:4px 0; font-size:14px; font-family:'Roboto Mono',monospace; font-weight:500; color:var(--text); background:transparent; outline:none; transition:border-color 0.15s; }
     .field-input:focus { border-bottom-color:var(--sky); }
     .table-scroll { overflow-x:auto; }
-    thead th { position:sticky; top:var(--thead-top, 110px); z-index:5; box-shadow:0 1px 0 rgba(255,255,255,0.1); }
+    thead th { background:var(--navy); }
     table { width:100%; border-collapse:collapse; font-size:13px; }
     thead tr { background:var(--navy); color:white; }
     thead th { padding:8px 10px; text-align:left; font-size:11px; font-weight:600; letter-spacing:0.5px; text-transform:uppercase; white-space:nowrap; vertical-align:top; background:var(--navy); }
@@ -1023,7 +1023,14 @@ function restoreState(state) {
   const notesEl = document.querySelector('.notes-area');
   if (notesEl) { notesEl.value = state.notes || ''; autoResizeNotes(notesEl); }
 
-  document.getElementById('thead-row').innerHTML = state.theadHTML || '';
+  renderTableHeaders(); // always rebuild fresh — pltCount already restored above
+  // Add extra PLT columns beyond 1 that were saved
+  for (let p = 2; p <= pltCount; p++) {
+    const th = document.createElement('th');
+    th.className='center'; th.style.width='140px'; th.id=`plt-th-${p}`;
+    th.innerHTML = `<div class="plt-label">PLT ${p}</div>`;
+    document.getElementById('thead-row').appendChild(th);
+  }
   document.getElementById('freight-body').innerHTML = state.freightBodyHTML || `<tr><td colspan="12"><div class="empty-state"><div class="icon">📦</div>Select a group above and tap Load Freight</div></td></tr>`;
   document.getElementById('tfoot').innerHTML = state.tfootHTML || '';
 
