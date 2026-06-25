@@ -989,10 +989,7 @@ function smartPrint() {
         }
       });
     });
-    alert('Please complete the following mandatory fields before saving:
-
-• ' + missing.join('
-• '));
+    alert('Please complete the following mandatory fields before saving:\n\n\u2022 ' + missing.join('\n\u2022 '));
     return;
   }
   // Clear any red highlights if all fields are filled
