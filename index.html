@@ -141,7 +141,10 @@
     table { width:100%; border-collapse:collapse; font-size:9px; table-layout:auto; }
     .table-scroll { overflow:visible !important; }
     .container { max-width:100%; padding:0; margin:0; }
-    @page { size: landscape; margin: 6mm; }
+    @page { size: landscape; margin: 5mm; }
+    /* Base print: shrink PLT columns from 140px */
+    thead th[id^="plt-th-"] { width:100px !important; }
+    thead th { min-width:0 !important; }
     thead tr { background:#1B3172 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     thead th { color:white !important; padding:5px 6px; font-size:8px; font-weight:700; text-transform:uppercase; text-align:left; vertical-align:top; }
     thead th.center { text-align:center; }
@@ -198,20 +201,30 @@
     .print-scale-3 .plt-label { font-size:7px; padding:1px 2px; }
     .print-scale-3 tbody td { padding:2px 3px; }
     .print-scale-3 .check-box { width:10px; height:10px; }
+    .print-scale-3 thead th { min-width:0 !important; }
+    .print-scale-3 thead th[id^="plt-th-"] { width:80px !important; }
+    .print-scale-3 .td-input, .print-scale-3 .num-input { font-size:7px; }
 
-    .print-scale-4 table { font-size:6px; }
-    .print-scale-4 thead th { font-size:5.5px; padding:2px 2px; }
+    .print-scale-4 table { font-size:6px; table-layout:fixed; width:100%; }
+    .print-scale-4 thead th { font-size:5.5px; padding:2px 2px; min-width:0 !important; overflow:hidden; }
     .print-scale-4 .tally-marks { font-size:6.5px; }
     .print-scale-4 .tally-count { font-size:5px; }
     .print-scale-4 .tally-btn { width:11px; height:11px; font-size:7px; }
     .print-scale-4 .plt-tare-input { width:28px; font-size:6px; }
     .print-scale-4 .plt-total-val { font-size:7px; }
     .print-scale-4 .plt-label { font-size:6px; padding:1px 2px; }
-    .print-scale-4 tbody td { padding:1.5px 2px; }
+    .print-scale-4 tbody td { padding:1.5px 2px; overflow:hidden; }
     .print-scale-4 .check-box { width:8px; height:8px; }
-    .print-scale-4 thead th[id^="plt-th-"] { width:60px !important; }
+    .print-scale-4 thead th[id^="plt-th-"] { width:55px !important; }
     .print-scale-4 .card-header { font-size:7px; padding:3px 6px; }
     .print-scale-4 .fields-grid .field-input { font-size:9px; }
+    .print-scale-4 td, .print-scale-4 th { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .print-scale-4 .td-input, .print-scale-4 .num-input { font-size:6px; }
+    /* Constrain text columns tightly */
+    .print-scale-4 table th:nth-child(2), .print-scale-4 table td:nth-child(2) { max-width:55px; }
+    .print-scale-4 table th:nth-child(3), .print-scale-4 table td:nth-child(3) { max-width:60px; }
+    .print-scale-4 table th:nth-child(4), .print-scale-4 table td:nth-child(4) { max-width:50px; }
+    .print-scale-4 table th:nth-child(5), .print-scale-4 table td:nth-child(5) { max-width:30px; }
 
     .print-scale-5 table { font-size:5px; }
     .print-scale-5 thead th { font-size:4.5px; padding:1.5px 1.5px; }
@@ -223,7 +236,12 @@
     .print-scale-5 .plt-label { font-size:5px; padding:1px; }
     .print-scale-5 tbody td { padding:1px 1.5px; }
     .print-scale-5 .check-box { width:7px; height:7px; }
-    .print-scale-5 thead th[id^="plt-th-"] { width:48px !important; }
+    .print-scale-5 thead th[id^="plt-th-"] { width:44px !important; }
+    .print-scale-5 table th:nth-child(2), .print-scale-5 table td:nth-child(2) { max-width:45px; }
+    .print-scale-5 table th:nth-child(3), .print-scale-5 table td:nth-child(3) { max-width:50px; }
+    .print-scale-5 table th:nth-child(4), .print-scale-5 table td:nth-child(4) { max-width:40px; }
+    .print-scale-5 td, .print-scale-5 th { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .print-scale-5 .td-input, .print-scale-5 .num-input { font-size:5px; }
   }
   .print-header { display:none; }
 </style>
@@ -936,9 +954,9 @@ function smartPrint() {
   const notesEl = document.getElementById('notes-textarea');
   if (notesEl) autoResizeNotes(notesEl);
   if (currentMode === 'air') {
-    if (pltCount >= 9) document.body.classList.add('print-scale-5');
-    else if (pltCount >= 7) document.body.classList.add('print-scale-4');
-    else if (pltCount >= 5) document.body.classList.add('print-scale-3');
+    if (pltCount >= 8) document.body.classList.add('print-scale-5');
+    else if (pltCount >= 6) document.body.classList.add('print-scale-4');
+    else if (pltCount >= 4) document.body.classList.add('print-scale-3');
     else if (pltCount >= 3) document.body.classList.add('print-scale-2');
     else if (pltCount >= 2) document.body.classList.add('print-scale-1');
   }
