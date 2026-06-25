@@ -56,8 +56,8 @@
     .field-label { font-size:10px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px; }
     .field-input { width:100%; border:none; border-bottom:2px solid var(--border); padding:4px 0; font-size:14px; font-family:'Roboto Mono',monospace; font-weight:500; color:var(--text); background:transparent; outline:none; transition:border-color 0.15s; }
     .field-input:focus { border-bottom-color:var(--sky); }
-    .table-scroll { overflow-x:auto; overflow-y:visible; }
-    thead th { background:var(--navy); position:sticky; top:var(--thead-top, 0px); z-index:10; }
+    .table-scroll { overflow-x:auto; }
+    thead th { background:var(--navy); }
     table { width:100%; border-collapse:collapse; font-size:13px; }
     thead tr { background:var(--navy); color:white; }
     thead th { padding:8px 10px; text-align:left; font-size:11px; font-weight:600; letter-spacing:0.5px; text-transform:uppercase; white-space:nowrap; vertical-align:top; background:var(--navy); }
@@ -396,7 +396,6 @@ async function loadGroup() {
     saveState();
     setStatus(`✓ ${items.length} items loaded from "${gname}"`,'success');
     if (currentMode==='air') updateFooter();
-    setTimeout(updateStickyOffset, 150);
   } catch(e) { setStatus('Error loading items.','error'); console.error(e); }
   document.getElementById('load-btn').disabled = false;
 }
@@ -1298,7 +1297,6 @@ loadGroups();
 initTabs();
 updateStickyOffset();
 window.addEventListener('resize', updateStickyOffset);
-window.addEventListener('scroll', updateStickyOffset, { passive: true });
 
 </script>
 </body>
