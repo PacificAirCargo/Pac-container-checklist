@@ -427,8 +427,7 @@ function renderDetailsGrid() {
       <div class="field-group"><div class="field-label">Seal #</div><input class="field-input" id="f-seal" type="text" placeholder="Seal number"></div>
       <div class="field-group"><div class="field-label">Tare Weight</div><input class="field-input" id="f-tare" type="text" placeholder="kg"></div>
       <div class="field-group"><div class="field-label">Date Packed</div><input class="field-input" id="f-date" type="text" value="${new Date().toLocaleDateString('en-AU')}"></div>
-      <div class="field-group"><div class="field-label">Packed By</div><input class="field-input" id="f-packedby" type="text" placeholder="Name"></div>
-      <div class="field-group"><div class="field-label">Supervised By</div><input class="field-input" id="f-supervisedby" type="text" placeholder="Name"></div>`;
+      <div class="field-group"><div class="field-label">Packed By</div><input class="field-input" id="f-packedby" type="text" placeholder="Name"></div>`;
   } else {
     g.innerHTML = `
       <div class="field-group"><div class="field-label">Consol #</div><input class="field-input" id="f-consol" type="text" placeholder="e.g. BNESYD00123" oninput="onConsolInput()"></div>
@@ -942,6 +941,64 @@ function autoResizeNotes(el) {
 }
 
 function smartPrint() {
+  // ── MANDATORY FIELD CHECK ──
+  const missing = [];
+  if (currentMode === 'sea') {
+    const seaFields = [
+      { id: 'f-consol',   label: 'Consol #' },
+      { id: 'f-dest',     label: 'Destination' },
+      { id: 'f-cont',     label: 'Container #' },
+      { id: 'f-size',     label: 'Container Size' },
+      { id: 'f-seal',     label: 'Seal #' },
+      { id: 'f-tare',     label: 'Tare Weight' },
+      { id: 'f-date',     label: 'Date Packed' },
+      { id: 'f-packedby', label: 'Packed By' },
+    ];
+    seaFields.forEach(f => {
+      const el = document.getElementById(f.id);
+      if (!el?.value?.trim()) missing.push(f.label);
+    });
+  } else {
+    const airFields = [
+      { id: 'f-consol',   label: 'Consol #' },
+      { id: 'f-dest',     label: 'Destination' },
+      { id: 'f-date',     label: 'Date' },
+      { id: 'f-packedby', label: 'Packed By' },
+    ];
+    airFields.forEach(f => {
+      const el = document.getElementById(f.id);
+      if (!el?.value?.trim()) missing.push(f.label);
+    });
+    // Check PLT tare and total weight fields
+    for (let p = 1; p <= pltCount; p++) {
+      const tare = document.getElementById(`tare-plt-${p}`)?.value?.trim();
+      const total = document.getElementById(`plt-total-input-${p}`)?.value?.trim();
+      if (!tare) missing.push(`PLT ${p} Tare Weight`);
+      if (!total) missing.push(`PLT ${p} Total Weight`);
+    }
+  }
+  if (missing.length > 0) {
+    // Highlight missing fields in red
+    document.querySelectorAll('.field-input').forEach(el => el.style.borderBottomColor = '');
+    missing.forEach(label => {
+      const allFields = document.querySelectorAll('.field-input');
+      allFields.forEach(el => {
+        const labelEl = el.closest('.field-group')?.querySelector('.field-label');
+        if (labelEl?.textContent?.trim() === label) {
+          el.style.borderBottomColor = '#e74c3c';
+        }
+      });
+    });
+    alert('Please complete the following mandatory fields before saving:
+
+• ' + missing.join('
+• '));
+    return;
+  }
+  // Clear any red highlights if all fields are filled
+  document.querySelectorAll('.field-input').forEach(el => el.style.borderBottomColor = '');
+
+  // ── PACKING COMPLETION CHECK ──
   const rows = document.getElementById('freight-body').querySelectorAll('tr[id^="row-"]');
   if (rows.length > 0 && !isFullyPacked()) {
     let overpackedCount = 0, incompleteCount = 0;
