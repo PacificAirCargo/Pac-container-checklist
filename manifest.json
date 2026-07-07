@@ -1,0 +1,18 @@
+{
+  "name": "PAC Pack Checklist",
+  "short_name": "Pack List",
+  "description": "Pacific Air Cargo container pack checklist",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1B3172",
+  "theme_color": "#1B3172",
+  "orientation": "landscape",
+  "icons": [
+    {
+      "src": "data:image/png;base64,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",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
