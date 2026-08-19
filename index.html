@@ -1034,6 +1034,14 @@ function collectState() {
   document.getElementById('details-grid').querySelectorAll('.field-input').forEach(input => {
     detailFields[input.id] = input.value;
   });
+  // Sync live input values onto their HTML attribute so innerHTML capture below
+  // (used for freightBodyHTML) actually reflects what the user typed — typing into
+  // an <input> updates the .value property but not the value="" attribute, so
+  // without this, anything typed after a row was created (e.g. breakdown, pcs,
+  // sender, receiver, loc, lithium/loose) would be lost when switching tabs.
+  document.querySelectorAll('#freight-body input[type="text"], #freight-body input[type="number"]').forEach(inp => {
+    inp.setAttribute('value', inp.value);
+  });
   return {
     mode: currentMode,
     pltCount: pltCount,
