@@ -1094,7 +1094,9 @@ function restoreState(state) {
   const notesEl = document.querySelector('.notes-area');
   if (notesEl) { notesEl.value = state.notes || ''; autoResizeNotes(notesEl); }
 
-  renderTableHeaders(); // always rebuild fresh — pltCount already restored above
+  const restoredPltCount = pltCount; // renderTableHeaders() below resets pltCount to 1 internally
+  renderTableHeaders();
+  pltCount = restoredPltCount;
   // Add extra PLT columns beyond 1 that were saved
   for (let p = 2; p <= pltCount; p++) {
     const th = document.createElement('th');
