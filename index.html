@@ -1394,7 +1394,7 @@ async function sharePackPdf() {
   const file = new File([buildPackPdf(sheet)], name, { type: 'application/pdf' });
   try {
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: name });     // Save to Files or Print
+      await navigator.share({ files: [file] });     // Save to Files or Print
       return;
     }
   } catch (e) {
