@@ -1015,6 +1015,8 @@ function smartPrint() {
     alert(msg);
     return;
   }
+  // Home Screen web app: window.print() is broken on iOS 27, so use the PDF + share sheet route
+  if (isStandaloneApp()) { sharePackPdf(); return; }
   document.body.classList.remove('print-scale-1','print-scale-2','print-scale-3','print-scale-4','print-scale-5');
   const notesEl = document.getElementById('notes-textarea');
   if (notesEl) autoResizeNotes(notesEl);
@@ -1028,6 +1030,377 @@ function smartPrint() {
     else if (pltCount >= 2) document.body.classList.add('print-scale-1');
   }
   window.print();
+}
+
+// ── STANDALONE (HOME SCREEN) PDF ─────────────────────────────────────────
+// window.print() is broken for Home Screen web apps on iOS 27, so in that mode
+// the sheet is drawn as a PDF (no libraries, works offline) and handed to the
+// share sheet, which has Save to Files and Print.
+function isStandaloneApp() {
+  return window.navigator.standalone === true ||
+    window.matchMedia('(display-mode: standalone)').matches;
+}
+
+function collectPackSheet() {
+  const txt = el => (el?.textContent || '').replace(/\s+/g, ' ').trim();
+  const $ = id => document.getElementById(id);
+  const sheet = {
+    mode: currentMode,
+    title: txt($('print-title')),
+    group: txt($('print-group-name')),
+    detailsTitle: txt($('details-header')),
+    details: [], head: [], rows: [], foot: [], totals: [],
+    notes: ($('notes-textarea')?.value || '').trim()
+  };
+  document.querySelectorAll('#details-grid .field-group').forEach(g => {
+    sheet.details.push({ label: txt(g.querySelector('.field-label')), value: g.querySelector('input')?.value || '' });
+  });
+  document.querySelectorAll('#thead-row th').forEach(th => {
+    const lab = th.querySelector('.plt-label');
+    sheet.head.push({
+      t: lab ? txt(lab) : txt(th).replace(/[⇕⇅↑↓▲▼]/g, '').trim(),
+      c: th.classList.contains('center') || th.classList.contains('plt-th') || !!lab
+    });
+  });
+  document.querySelectorAll('#freight-body tr[id^="row-"]').forEach(tr => {
+    const rid = parseInt(tr.id.replace('row-', ''));
+    const state = tr.classList.contains('overpacked-row') ? 'over' : tr.classList.contains('done-row') ? 'done' : '';
+    const cells = Array.from(tr.children).map((td, ci) => {
+      const center = td.classList.contains('center') || ci === 0;
+      const box = td.querySelector('.check-box');
+      if (box) return { k: 'check', checked: box.classList.contains('checked'), c: true };
+      if (td.querySelector('.tally-cell')) {
+        const m = (td.id || '').match(/plt-cell-\d+-(\d+)/);
+        const n = m ? (tallyData[`${rid}-plt${m[1]}`] || 0) : (tallyData[`sea-${rid}`] || 0);
+        return { k: 'tally', n, done: state === 'done' && n > 0, c: true };
+      }
+      const inp = td.querySelector('input');
+      return { k: 'text', t: inp ? inp.value : txt(td), c: center, col: ci };
+    });
+    sheet.rows.push({ state, cells });
+  });
+  document.querySelectorAll('#tfoot tr').forEach(tr => {
+    const tds = Array.from(tr.children);
+    if (!tds.length) return;
+    sheet.foot.push({
+      label: txt(tds[0]),
+      cells: tds.slice(1).map(td => {
+        const inp = td.querySelector('input');
+        return inp ? (inp.value ? inp.value + ' kg' : '—') : txt(td);
+      })
+    });
+  });
+  document.querySelectorAll('#totals-bar .total-item').forEach(it => {
+    sheet.totals.push([txt(it.querySelector('.total-label')), txt(it.querySelector('.total-value'))]);
+  });
+  return sheet;
+}
+
+function buildPackPdf(sheet) {
+  const W = 842, H = 595, M = 28, CW = W - 2 * M;
+  const HW = [278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,
+    556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,
+    667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,
+    278,278,278,469,556,333,
+    556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,
+    334,260,334,584];
+  const EXTRA = { 0x2014: [1000, '\\227'], 0x2013: [556, '\\226'], 0x2019: [222, '\\222'],
+                  0x2022: [350, '\\225'], 0x2212: [584, '-'], 0x2192: [584, '>'], 0x2190: [584, '<'] };
+  const cw = ch => {
+    const c = ch.charCodeAt(0);
+    if (c >= 32 && c <= 126) return HW[c - 32];
+    if (c === 0xb3) return 333;
+    return EXTRA[c] ? EXTRA[c][0] : 556;
+  };
+  const esc = t => Array.from(String(t)).map(ch => {
+    const c = ch.charCodeAt(0);
+    if (ch === '\\' || ch === '(' || ch === ')') return '\\' + ch;
+    if (c >= 32 && c <= 126) return ch;
+    if (EXTRA[c]) return EXTRA[c][1];
+    if (c >= 0xa0 && c <= 0xff) return '\\' + c.toString(8);
+    return '?';
+  }).join('');
+  const width = (t, size, bold) =>
+    Array.from(String(t)).reduce((a, ch) => a + cw(ch), 0) * size / 1000 * (bold ? 1.05 : 1);
+  const wrap = (t, size, bold, maxW) => {
+    const out = [];
+    String(t).split(/\n/).forEach(par => {
+      const words = par.split(/\s+/).filter(Boolean);
+      let cur = '';
+      const push = () => { if (cur) out.push(cur); cur = ''; };
+      words.forEach(w => {
+        let word = w;
+        while (width(word, size, bold) > maxW && word.length > 1) {   // break very long words
+          let k = word.length - 1;
+          while (k > 1 && width(word.slice(0, k), size, bold) > maxW) k--;
+          const head = word.slice(0, k);
+          if (cur) push();
+          out.push(head); word = word.slice(k);
+        }
+        const trial = cur ? cur + ' ' + word : word;
+        if (width(trial, size, bold) <= maxW) cur = trial; else { push(); cur = word; }
+      });
+      push();
+      if (!words.length) out.push('');
+    });
+    return out.length ? out : [''];
+  };
+
+  const NAVY = '0.106 0.192 0.447', NAVY2 = '0.102 0.176 0.396', SKY = '0.161 0.671 0.886', WHITE = '1 1 1',
+        INK = '0.13 0.15 0.2', GREY = '0.45 0.5 0.58', LINE = '0.8 0.86 0.92', ZEBRA = '0.961 0.973 0.988',
+        DONE = '0.91 0.973 0.941', OVER = '0.992 0.925 0.918', GREEN = '0.18 0.8 0.443', MIST = '0.78 0.86 0.95';
+  const f = n => n.toFixed(2);
+  const fill = (x, y, w, h, rgb) => `${rgb} rg ${f(x)} ${f(y)} ${f(w)} ${f(h)} re f\n`;
+  const box = (x, y, w, h, rgb, lw) => `${rgb} RG ${lw} w ${f(x)} ${f(y)} ${f(w)} ${f(h)} re S\n`;
+  const ln = (x1, y1, x2, y2, rgb, lw) => `${rgb} RG ${lw} w ${f(x1)} ${f(y1)} m ${f(x2)} ${f(y2)} l S\n`;
+  const text = (x, y, t, size, bold, rgb) =>
+    `BT ${rgb} rg /${bold ? 'F2' : 'F1'} ${f(size)} Tf ${f(x)} ${f(y)} Td (${esc(t)}) Tj ET\n`;
+  const ctext = (x, w, y, t, size, bold, rgb) => text(x + (w - width(t, size, bold)) / 2, y, t, size, bold, rgb);
+  const rtext = (xr, y, t, size, bold, rgb) => text(xr - width(t, size, bold), y, t, size, bold, rgb);
+
+  // ── choose font size / column widths so every column fits the page ─────
+  const nCols = sheet.head.length;
+  const cellText = c => c.k === 'text' ? c.t : '';
+  let fs = 9, widths = [], padX = 4;
+  for (fs = 9; fs >= 4.5; fs -= 0.5) {
+    padX = Math.max(1.5, fs * 0.5);
+    const min = [], nat = [];
+    for (let i = 0; i < nCols; i++) {
+      const h = sheet.head[i];
+      let mn = 0, nt = 0;
+      const consider = (t, bold, size, fixedMin) => {
+        const words = String(t).split(/\s+/).filter(Boolean);
+        const longest = words.reduce((a, w) => Math.max(a, width(w, size, bold)), 0);
+        mn = Math.max(mn, fixedMin || longest);
+        nt = Math.max(nt, width(t, size, bold));
+      };
+      consider(h.t, true, fs - 0.5, 0);
+      sheet.rows.forEach(r => {
+        const c = r.cells[i]; if (!c) return;
+        if (c.k === 'check') { mn = Math.max(mn, fs * 1.3); nt = Math.max(nt, fs * 1.3); }
+        else if (c.k === 'tally') { mn = Math.max(mn, fs * 4.2); nt = Math.max(nt, fs * 6); }
+        else consider(c.t, false, fs, 0);
+      });
+      min.push(mn + 2 * padX); nat.push(nt + 2 * padX);
+    }
+    const sumMin = min.reduce((a, b) => a + b, 0);
+    if (sumMin <= CW || fs <= 4.5) {
+      const extra = CW - sumMin, need = nat.map((n, i) => Math.max(0, n - min[i]));
+      const sumNeed = need.reduce((a, b) => a + b, 0);
+      if (extra <= 0) { widths = min.map(m => m * CW / sumMin); }
+      else if (sumNeed <= extra) {
+        const spare = extra - sumNeed, sumNat = nat.reduce((a, b) => a + b, 0);
+        widths = nat.map(n => n + spare * n / sumNat);
+      } else widths = min.map((m, i) => m + extra * need[i] / sumNeed);
+      break;
+    }
+  }
+  const cx = [M]; widths.forEach((w, i) => cx.push(cx[i] + w));
+  const lh = fs * 1.25, py = fs * 0.55;
+
+  // ── pages ───────────────────────────────────────────────────────────────
+  const pages = [];
+  let c = '', y = 0;
+  const BOTTOM = M + 14;
+  const newPage = () => {
+    if (c) pages.push(c);
+    c = '';
+    c += text(M, H - M - 12, 'PACIFIC', 17, true, NAVY);
+    c += text(M + width('PACIFIC ', 17, true), H - M - 12, 'AIR CARGO', 17, true, SKY);
+    c += rtext(W - M, H - M - 8, sheet.title || 'Pack Checklist', 11, true, NAVY);
+    if (sheet.group) c += rtext(W - M, H - M - 21, sheet.group, 8, false, GREY);
+    c += ln(M, H - M - 28, W - M, H - M - 28, NAVY, 2);
+    y = H - M - 28 - 12;
+  };
+  const ensure = need => { if (y - need < BOTTOM) newPage(); };
+  newPage();
+
+  // ── details card ────────────────────────────────────────────────────────
+  const cardBar = title => {
+    c += fill(M, y - 18, CW, 18, NAVY);
+    c += text(M + 10, y - 12.5, String(title).toUpperCase(), 8, true, WHITE);
+    y -= 18;
+  };
+  if (sheet.details.length) {
+    cardBar(sheet.detailsTitle || 'Details');
+    const per = 4, rowsN = Math.ceil(sheet.details.length / per), cellW = (CW - 20) / per, rowH = 34;
+    c += box(M, y - rowsN * rowH - 8, CW, rowsN * rowH + 8, LINE, 0.8);
+    sheet.details.forEach((d, i) => {
+      const r = Math.floor(i / per), k = i % per;
+      const x = M + 10 + k * cellW, yy = y - 8 - r * rowH;
+      c += text(x, yy - 8, String(d.label).toUpperCase(), 6.5, true, GREY);
+      const val = wrap(d.value || '', 10, false, cellW - 14)[0];
+      c += text(x, yy - 22, val, 10, true, INK);
+      c += ln(x, yy - 26, x + cellW - 12, yy - 26, LINE, 0.6);
+    });
+    y -= rowsN * rowH + 8 + 12;
+  }
+
+  // ── table ───────────────────────────────────────────────────────────────
+  const drawHeader = () => {
+    const hl = sheet.head.map((h, i) => wrap(h.t, fs - 0.5, true, widths[i] - 2 * padX));
+    const hh = Math.max(...hl.map(l => l.length)) * lh + 2 * py;
+    ensure(hh + 40);
+    c += fill(M, y - hh, CW, hh, NAVY);
+    sheet.head.forEach((h, i) => {
+      const lines = hl[i], top = y - py - (fs - 0.5) * 0.85 - (hh - 2 * py - lines.length * lh) / 2;
+      lines.forEach((ln_, k) => {
+        const yy = top - k * lh;
+        c += h.c ? ctext(cx[i], widths[i], yy, ln_, fs - 0.5, true, WHITE) : text(cx[i] + padX, yy, ln_, fs - 0.5, true, WHITE);
+      });
+      if (i) c += ln(cx[i], y - hh, cx[i], y, '0.3 0.4 0.62', 0.4);
+    });
+    y -= hh;
+  };
+
+  const drawTally = (x, w, yTop, rh, n) => {
+    const h = fs * 1.05, g = fs * 0.32, gap = fs * 0.45;
+    const groups = Math.floor(n / 5), rem = n % 5;
+    let total = groups * (4 * g + gap) + (rem ? (rem - 1) * g : -gap);
+    let scale = 1;
+    if (total > w - 2 * padX) scale = (w - 2 * padX) / total;
+    const gg = g * scale, gp = gap * scale;
+    total *= scale;
+    let px = x + (w - total) / 2;
+    const yt = yTop - py * 0.8, yb = yt - h;
+    let s = '';
+    for (let k = 0; k < groups; k++) {
+      for (let j = 0; j < 4; j++) s += `${px + j * gg} ${yb} m ${px + j * gg} ${yt} l `;
+      s += `${px - gg * 0.5} ${yb + h * 0.25} m ${px + 3 * gg + gg * 0.5} ${yt - h * 0.2} l `;
+      px += 4 * gg + gp;
+    }
+    for (let j = 0; j < rem; j++) s += `${px + j * gg} ${yb} m ${px + j * gg} ${yt} l `;
+    return `${INK} RG ${f(fs * 0.12 + 0.3)} w 1 J ${s.replace(/(\d+\.?\d*) (\d+\.?\d*) (m|l)/g, (m, a, b, op) => f(+a) + ' ' + f(+b) + ' ' + op)}S\n`;
+  };
+
+  drawHeader();
+  sheet.rows.forEach((r, idx) => {
+    const lines = r.cells.map((cell, i) => cell.k === 'text'
+      ? wrap(cell.t, fs, cell.col === 6 && sheet.mode === 'air', widths[i] - 2 * padX) : null);
+    let rh = Math.max(fs * 2.3, ...lines.map(l => l ? l.length * lh + 2 * py : 0));
+    if (r.cells.some(cell => cell.k === 'tally' && cell.n > 0 && !cell.done)) rh = Math.max(rh, fs * 3.3);
+    if (y - rh < BOTTOM) { newPage(); drawHeader(); }
+    const bg = r.state === 'over' ? OVER : r.state === 'done' ? DONE : (idx % 2 ? ZEBRA : WHITE);
+    c += fill(M, y - rh, CW, rh, bg);
+    r.cells.forEach((cell, i) => {
+      const x = cx[i], w = widths[i];
+      if (cell.k === 'check') {
+        const bs = fs * 1.3, bx = x + (w - bs) / 2, by = y - rh / 2 - bs / 2;
+        if (cell.checked) {
+          c += fill(bx, by, bs, bs, GREEN);
+          c += `${WHITE} RG ${f(fs * 0.17)} w 1 J 1 j ${f(bx + bs * 0.22)} ${f(by + bs * 0.5)} m ${f(bx + bs * 0.42)} ${f(by + bs * 0.27)} l ${f(bx + bs * 0.78)} ${f(by + bs * 0.72)} l S\n`;
+        } else c += box(bx + 0.4, by + 0.4, bs - 0.8, bs - 0.8, '0.6 0.68 0.76', 0.8);
+      } else if (cell.k === 'tally') {
+        if (!cell.n) c += ctext(x, w, y - rh / 2 - fs * 0.3, '\u2014', fs, false, GREY);
+        else if (cell.done) c += ctext(x, w, y - rh / 2 - fs * 0.4, String(cell.n), fs * 1.5, true, '0.15 0.65 0.35');
+        else {
+          c += drawTally(x, w, y, rh, cell.n);
+          c += ctext(x, w, y - rh + py + fs * 0.1, cell.n + ' pcs', fs * 0.85, false, GREY);
+        }
+      } else {
+        const ls = lines[i];
+        const bold = cell.col === 6 && sheet.mode === 'air';
+        const col = cell.col === 0 ? GREY : bold ? NAVY : INK;
+        const top = y - (rh - ls.length * lh) / 2 - fs * 0.88;
+        ls.forEach((l, k) => {
+          c += cell.c ? ctext(x, w, top - k * lh, l, fs, bold, col) : text(x + padX, top - k * lh, l, fs, false, col);
+        });
+      }
+    });
+    c += ln(M, y - rh, M + CW, y - rh, LINE, 0.4);
+    y -= rh;
+  });
+
+  // ── pallet footer rows (air) ────────────────────────────────────────────
+  if (sheet.foot.length) {
+    const labelCols = nCols - sheet.foot[0].cells.length;
+    const labelW = cx[labelCols] - M;
+    const fh = fs * 2.5;
+    ensure(fh * sheet.foot.length);
+    sheet.foot.forEach(fr => {
+      if (y - fh < BOTTOM) newPage();
+      c += fill(M, y - fh, CW, fh, NAVY2);
+      c += text(M + 8, y - fh / 2 - fs * 0.35, fr.label, fs, true, WHITE);
+      fr.cells.forEach((t, k) => {
+        const i = labelCols + k;
+        c += ctext(cx[i], widths[i], y - fh / 2 - fs * 0.35, t, fs, true, WHITE);
+        c += ln(cx[i], y - fh, cx[i], y, '0.3 0.4 0.62', 0.4);
+      });
+      y -= fh;
+    });
+  }
+  y -= 14;
+
+  // ── totals bar ──────────────────────────────────────────────────────────
+  if (sheet.totals.length) {
+    const th = 34;
+    ensure(th + 4);
+    c += fill(M, y - th, CW, th, NAVY);
+    const tw = CW / sheet.totals.length;
+    sheet.totals.forEach((t, i) => {
+      c += ctext(M + i * tw, tw, y - 13, String(t[0]).toUpperCase(), 6.5, true, MIST);
+      c += ctext(M + i * tw, tw, y - 27, t[1], 12, true, WHITE);
+      if (i) c += ln(M + i * tw, y - th + 7, M + i * tw, y - 7, '0.35 0.45 0.65', 0.5);
+    });
+    y -= th + 14;
+  }
+
+  // ── notes ───────────────────────────────────────────────────────────────
+  if (sheet.notes) {
+    ensure(18 + 40);
+    cardBar('Notes');
+    const nl = wrap(sheet.notes, 9, false, CW - 20);
+    y -= 6;
+    nl.forEach(l => {
+      if (y - 12 < BOTTOM) { newPage(); }
+      c += text(M + 10, y - 9, l, 9, false, INK);
+      y -= 12;
+    });
+  }
+  pages.push(c);
+
+  // ── footer on every page + PDF assembly ─────────────────────────────────
+  const stamp = new Date().toLocaleString('en-AU', { dateStyle: 'short', timeStyle: 'short' });
+  const withFooter = pages.map((p, i) =>
+    p + text(M, 18, 'PAC ' + (sheet.title || 'Pack Checklist'), 7, false, GREY) +
+    rtext(W - M, 18, `${stamp}   Page ${i + 1} of ${pages.length}`, 7, false, GREY));
+
+  const objs = [];
+  objs[1] = '<< /Type /Catalog /Pages 2 0 R >>';
+  objs[2] = `<< /Type /Pages /Kids [${withFooter.map((_, i) => `${5 + i * 2} 0 R`).join(' ')}] /Count ${withFooter.length} >>`;
+  objs[3] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';
+  objs[4] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>';
+  withFooter.forEach((p, i) => {
+    const pn = 5 + i * 2, cn = pn + 1;
+    objs[pn] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${cn} 0 R >>`;
+    objs[cn] = `<< /Length ${p.length} >>\nstream\n${p}endstream`;
+  });
+  let pdf = '%PDF-1.4\n';
+  const offsets = [];
+  for (let i = 1; i < objs.length; i++) { offsets[i] = pdf.length; pdf += `${i} 0 obj\n${objs[i]}\nendobj\n`; }
+  const xref = pdf.length;
+  pdf += `xref\n0 ${objs.length}\n0000000000 65535 f \n`;
+  for (let i = 1; i < objs.length; i++) pdf += String(offsets[i]).padStart(10, '0') + ' 00000 n \n';
+  pdf += `trailer\n<< /Size ${objs.length} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+  const bytes = new Uint8Array(pdf.length);
+  for (let i = 0; i < pdf.length; i++) bytes[i] = pdf.charCodeAt(i) & 0xff;
+  return bytes;
+}
+
+async function sharePackPdf() {
+  const sheet = collectPackSheet();
+  const consol = (document.getElementById('f-consol')?.value || '').trim().replace(/[^\w-]+/g, '_');
+  const name = `PAC-${sheet.mode === 'air' ? 'Air' : 'Container'}-Pack-Checklist${consol ? '-' + consol : ''}.pdf`;
+  const file = new File([buildPackPdf(sheet)], name, { type: 'application/pdf' });
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: name });     // Save to Files or Print
+      return;
+    }
+  } catch (e) {
+    if (e && e.name === 'AbortError') return;
+  }
+  window.open(URL.createObjectURL(file), '_blank');
 }
 
 // ── TAB SYSTEM ──────────────────────────────────────────────────
