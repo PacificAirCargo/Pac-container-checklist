@@ -33,6 +33,7 @@
     .mode-toggle { display:flex; border-radius:8px; overflow:hidden; border:2px solid rgba(255,255,255,0.2); }
     .mode-btn { padding:8px 18px; font-size:13px; font-weight:700; cursor:pointer; border:none; background:transparent; color:rgba(255,255,255,0.6); transition:all 0.2s; }
     .mode-btn.active { background:var(--yellow); color:var(--navy); }
+    .board-toggle { display:flex; border-radius:8px; overflow:hidden; border:2px solid rgba(255,255,255,0.2); }
     .save-btn { background:var(--yellow); color:var(--navy); border:none; padding:10px 20px; border-radius:6px; font-weight:700; font-size:13px; cursor:pointer; }
     .save-btn:hover { opacity:0.85; }
     .clear-btn { background:#e74c3c; color:white; border:none; padding:10px 18px; border-radius:6px; font-weight:700; font-size:13px; cursor:pointer; transition:all 0.2s; letter-spacing:0.3px; box-shadow:0 2px 8px rgba(231,76,60,0.5); }
@@ -263,6 +264,10 @@
     </div>
   </div>
   <div class="header-right">
+    <div class="board-toggle">
+      <button class="mode-btn active" id="board-btn-pac" onclick="setBoard('pac')">PAC</button>
+      <button class="mode-btn" id="board-btn-te" onclick="setBoard('te')">TE</button>
+    </div>
     <div class="mode-toggle">
       <button class="mode-btn active" id="btn-sea" onclick="setMode('sea')">🚢 SEA</button>
       <button class="mode-btn" id="btn-air" onclick="setMode('air')">✈️ AIR</button>
@@ -337,7 +342,17 @@
 
 <script>
 const API_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjY1NTA2MjcxMCwiYWFpIjoxMSwidWlkIjo0Mjk5NTY4OSwiaWFkIjoiMjAyNi0wNS0wN1QwMzozMDo0Ny4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6MTY2NzY4OTQsInJnbiI6InVzZTEifQ.Aju0mNGNOKtHfSNkYp_uL4_zVuHMXVIZ6JHdWClEwPQ';
-const BOARD_ID = '6964153366';
+// ── BOARDS (same API token, different Monday board) ──
+const BOARDS = {
+  pac: { label: 'PAC', id: '6964153366',
+         cols: { sender:'', id:'item_id__1', receiver:'text73__1', loc:'', pcs:'', kg:'numbers4__1' } },
+  te:  { label: 'TE',  id: '5880325781',
+         // sender = TEE PO# (shown as Shipment #), receiver = Supplier
+         nameCol: true,
+         cols: { sender:'text_mkzn2b9g', id:'pulse_id_mm8aafh', receiver:'text', loc:'text_mm8axvcx', pcs:'numbers0', kg:'numbers6' } }
+};
+let currentBoard = 'pac';
+let BOARD_ID = BOARDS[currentBoard].id;
 let rowCount = 0;
 let tallyData = {};   // key: "rid-pltN" (air) or "sea-rid"
 let currentMode = 'sea';
@@ -357,8 +372,23 @@ function setStatus(msg,type='') {
   const el=document.getElementById('status-msg');
   el.textContent=msg; el.className='status-msg'+(type?' '+type:'');
 }
+function hasNameCol() { return !!BOARDS[currentBoard].nameCol; }
+function setBoard(key) {
+  if (!BOARDS[key]) return;
+  currentBoard = key;
+  BOARD_ID = BOARDS[key].id;
+  document.getElementById('board-btn-pac').classList.toggle('active', key==='pac');
+  document.getElementById('board-btn-te').classList.toggle('active', key==='te');
+  setMode(currentMode);   // rebuild table layout (TE has an extra Name column)
+  loadGroups();
+  saveState();
+}
 async function loadGroups() {
-  setStatus('Loading groups from Monday.com...');
+  const sel0 = document.getElementById('group-select');
+  sel0.innerHTML = '<option value="">Loading groups...</option>';
+  document.getElementById('load-btn').disabled = true;
+  if (!/^\d+$/.test(BOARD_ID)) { setStatus('Board ID not set for ' + BOARDS[currentBoard].label + ' - add it to BOARDS.','error'); return; }
+  setStatus('Loading groups from ' + BOARDS[currentBoard].label + '...');
   try {
     const d = await mondayQuery(`{boards(ids:${BOARD_ID}){groups{id title}}}`);
     const groups = d?.data?.boards?.[0]?.groups;
@@ -384,13 +414,15 @@ async function loadGroup() {
     items.forEach(item => {
       const cols={}, byId={};
       item.column_values.forEach(cv => { if(cv.column?.title) cols[cv.column.title.toLowerCase().trim()]=cv.text||''; byId[cv.id]=cv.text||''; });
+      const m = BOARDS[currentBoard].cols;
       addRow({
-        sender: item.name,
-        id:     byId['item_id__1']||cols['internal id']||'',
-        receiver: byId['text73__1']||cols['receiver']||cols['consignee']||'',
-        loc:    cols['loc']||cols['location']||cols['bay']||'',
-        pcs:    cols['pcs']||cols["pce's"]||cols['pieces']||cols['qty']||'',
-        kg:     byId['numbers4__1']||cols['kg']||cols['weight']||'',
+        name:   item.name,
+        sender: (m.sender && byId[m.sender]) || item.name,
+        id:     (m.id && byId[m.id])||cols['internal id']||'',
+        receiver: (m.receiver && byId[m.receiver])||cols['receiver']||cols['consignee']||'',
+        loc:    (m.loc && byId[m.loc])||cols['loc']||cols['location']||cols['bay']||'',
+        pcs:    (m.pcs && byId[m.pcs])||cols['pcs']||cols["pce's"]||cols['pieces']||cols['qty']||'',
+        kg:     (m.kg && byId[m.kg])||cols['kg']||cols['weight']||'',
         breakdown: cols['piece breakdown']||cols['breakdown']||''
       });
     });
@@ -443,14 +475,17 @@ function renderDetailsGrid() {
 function renderTableHeaders() {
   const tr = document.getElementById('thead-row');
   pltCount = 1;
+  const x = hasNameCol() ? 1 : 0;
+  const nameTh = x ? sortableHeader('Name',1,'min-width:90px') : '';
   if (currentMode==='sea') {
     tr.innerHTML = `
       <th style="width:32px">#</th>
       ${sortableHeader('Shipment #',0,'min-width:90px')}
-      ${sortableHeader('Internal ID',1,'min-width:110px')}
-      ${sortableHeader('Receiver',2,'min-width:90px')}
-      ${sortableHeader('Location',3,'')}
-      ${sortableHeader('PCS',4,'width:50px','center','num')}
+      ${nameTh}
+      ${sortableHeader('Internal ID',1+x,'min-width:110px')}
+      ${sortableHeader('Receiver',2+x,'min-width:90px')}
+      ${sortableHeader('Location',3+x,'')}
+      ${sortableHeader('PCS',4+x,'width:50px','center','num')}
       <th>Piece Breakdown</th><th class="center" style="width:60px">Picked</th>
       <th class="center" style="width:60px">Stickered</th>
       <th class="center" style="width:130px">Packed</th>`;
@@ -458,11 +493,12 @@ function renderTableHeaders() {
     tr.innerHTML = `
       <th style="width:32px">#</th>
       ${sortableHeader('Shipment #',0,'min-width:90px')}
-      ${sortableHeader('Internal ID',1,'min-width:110px')}
-      ${sortableHeader('Receiver',2,'min-width:90px')}
-      ${sortableHeader('Location',3,'')}
-      ${sortableHeader("PCE's",4,'width:50px','center','num')}
-      ${sortableHeader('KG',5,'width:65px','center','num')}
+      ${nameTh}
+      ${sortableHeader('Internal ID',1+x,'min-width:110px')}
+      ${sortableHeader('Receiver',2+x,'min-width:90px')}
+      ${sortableHeader('Location',3+x,'')}
+      ${sortableHeader("PCE's",4+x,'width:50px','center','num')}
+      ${sortableHeader('KG',5+x,'width:65px','center','num')}
       <th class="center" style="width:60px">Lithium</th>
       <th class="center" style="width:60px">Loose</th>
       ${pltHeaderHTML(1)}`;
@@ -555,9 +591,9 @@ function updateFooter() {
   if (currentMode==='sea') return;
   const tfoot = document.getElementById('tfoot');
   // Build tare row, total row, and PCE row
-  let tareCells = `<td colspan="9" style="padding:6px 10px"><span class="plt-footer-label">PLT Tare Weight (kg)</span></td>`;
-  let totalCells = `<td colspan="9" style="padding:6px 10px"><span class="plt-footer-label">PLT Total Weight (kg)</span></td>`;
-  let pceCells = `<td colspan="9" style="padding:6px 10px"><span class="plt-footer-label">PLT Total PCE's</span></td>`;
+  let tareCells = `<td colspan="${9 + (hasNameCol() ? 1 : 0)}" style="padding:6px 10px"><span class="plt-footer-label">PLT Tare Weight (kg)</span></td>`;
+  let totalCells = `<td colspan="${9 + (hasNameCol() ? 1 : 0)}" style="padding:6px 10px"><span class="plt-footer-label">PLT Total Weight (kg)</span></td>`;
+  let pceCells = `<td colspan="${9 + (hasNameCol() ? 1 : 0)}" style="padding:6px 10px"><span class="plt-footer-label">PLT Total PCE's</span></td>`;
   for (let p=1; p<=pltCount; p++) {
     const existingTare = document.getElementById(`tare-plt-${p}`)?.value || '';
     tareCells += `<td class="center plt-footer" style="padding:6px 8px">
@@ -813,12 +849,14 @@ function addRow(data={}) {
   tr.id = `row-${rid}`;
   const kg = parseFloat(data.kg||0)||0;
   tr.dataset.freightkg = kg;
+  const nameTd = hasNameCol() ? `<td><input class="td-input" type="text" value="${data.name||''}" placeholder="Name"></td>` : '';
 
   if (currentMode==='sea') {
     tallyData[`sea-${rid}`] = 0;
     tr.innerHTML = `
       <td style="color:var(--muted);font-size:11px;font-weight:600;text-align:center">${rid}</td>
       <td><input class="td-input" type="text" value="${data.sender||''}" placeholder="Shipment #"></td>
+      ${nameTd}
       <td><input class="td-input" type="text" value="${data.id||''}" placeholder="Internal ID" style="font-family:'Roboto Mono',monospace;font-size:11.5px;white-space:nowrap"></td>
       <td><input class="td-input" type="text" value="${data.receiver||''}" placeholder="Receiver"></td>
       <td><input class="td-input" type="text" value="${data.loc||''}" placeholder="e.g. D4"></td>
@@ -836,6 +874,7 @@ function addRow(data={}) {
     tr.innerHTML = `
       <td style="color:var(--muted);font-size:11px;font-weight:600;text-align:center">${rid}</td>
       <td><input class="td-input" type="text" value="${data.sender||''}" placeholder="Shipment #"></td>
+      ${nameTd}
       <td><input class="td-input" type="text" value="${data.id||''}" placeholder="Internal ID" style="font-family:'Roboto Mono',monospace;font-size:11.5px;white-space:nowrap"></td>
       <td><input class="td-input" type="text" value="${data.receiver||''}" placeholder="Receiver"></td>
       <td><input class="td-input" type="text" value="${data.loc||''}" placeholder="e.g. R4"></td>
@@ -1276,7 +1315,7 @@ function buildPackPdf(sheet) {
   drawHeader();
   sheet.rows.forEach((r, idx) => {
     const lines = r.cells.map((cell, i) => cell.k === 'text'
-      ? wrap(cell.t, fs, cell.col === 6 && sheet.mode === 'air', widths[i] - 2 * padX) : null);
+      ? wrap(cell.t, fs, cell.col === (6 + (hasNameCol() ? 1 : 0)) && sheet.mode === 'air', widths[i] - 2 * padX) : null);
     let rh = Math.max(fs * 2.3, ...lines.map(l => l ? l.length * lh + 2 * py : 0));
     if (r.cells.some(cell => cell.k === 'tally' && cell.n > 0 && !cell.done)) rh = Math.max(rh, fs * 3.3);
     if (y - rh < BOTTOM) { newPage(); drawHeader(); }
@@ -1299,7 +1338,7 @@ function buildPackPdf(sheet) {
         }
       } else {
         const ls = lines[i];
-        const bold = cell.col === 6 && sheet.mode === 'air';
+        const bold = cell.col === (6 + (hasNameCol() ? 1 : 0)) && sheet.mode === 'air';
         const col = cell.col === 0 ? GREY : bold ? NAVY : INK;
         const top = y - (rh - ls.length * lh) / 2 - fs * 0.88;
         ls.forEach((l, k) => {
@@ -1424,6 +1463,7 @@ function collectState() {
   });
   return {
     mode: currentMode,
+    board: currentBoard,
     pltCount: pltCount,
     rowCount: rowCount,
     tallyData: tallyData,
@@ -1446,6 +1486,13 @@ function collectState() {
 }
 
 function restoreState(state) {
+  const wantBoard = state.board || 'pac';
+  if (wantBoard !== currentBoard && BOARDS[wantBoard]) {
+    currentBoard = wantBoard; BOARD_ID = BOARDS[wantBoard].id;
+    document.getElementById('board-btn-pac').classList.toggle('active', wantBoard==='pac');
+    document.getElementById('board-btn-te').classList.toggle('active', wantBoard==='te');
+    loadGroups();
+  }
   currentMode = state.mode || 'sea';
   pltCount = state.pltCount || 1;
   rowCount = state.rowCount || 0;
