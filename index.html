@@ -347,9 +347,9 @@ const BOARDS = {
   pac: { label: 'PAC', id: '6964153366',
          cols: { sender:'', id:'item_id__1', receiver:'text73__1', loc:'', pcs:'', kg:'numbers4__1' } },
   te:  { label: 'TE',  id: '5880325781',
-         // sender = TEE PO# (shown as Shipment #), receiver = Supplier
-         nameCol: true,
-         cols: { sender:'text_mkzn2b9g', id:'pulse_id_mm8aafh', receiver:'text', loc:'text_mm8axvcx', pcs:'numbers0', kg:'numbers6' } }
+         // Shipment # = item name, extra column = TEE PO#, receiver = Supplier
+         nameCol: true, nameLabel: 'TEE PO#', nameColId: 'text_mkzn2b9g',
+         cols: { sender:'', id:'pulse_id_mm8aafh', receiver:'text', loc:'text_mm8axvcx', pcs:'numbers0', kg:'numbers6' } }
 };
 let currentBoard = 'pac';
 let BOARD_ID = BOARDS[currentBoard].id;
@@ -416,7 +416,7 @@ async function loadGroup() {
       item.column_values.forEach(cv => { if(cv.column?.title) cols[cv.column.title.toLowerCase().trim()]=cv.text||''; byId[cv.id]=cv.text||''; });
       const m = BOARDS[currentBoard].cols;
       addRow({
-        name:   item.name,
+        name:   (BOARDS[currentBoard].nameColId && byId[BOARDS[currentBoard].nameColId]) || '',
         sender: (m.sender && byId[m.sender]) || item.name,
         id:     (m.id && byId[m.id])||cols['internal id']||'',
         receiver: (m.receiver && byId[m.receiver])||cols['receiver']||cols['consignee']||'',
@@ -476,7 +476,7 @@ function renderTableHeaders() {
   const tr = document.getElementById('thead-row');
   pltCount = 1;
   const x = hasNameCol() ? 1 : 0;
-  const nameTh = x ? sortableHeader('Name',1,'min-width:90px') : '';
+  const nameTh = x ? sortableHeader(BOARDS[currentBoard].nameLabel||'Name',1,'min-width:90px') : '';
   if (currentMode==='sea') {
     tr.innerHTML = `
       <th style="width:32px">#</th>
@@ -849,7 +849,7 @@ function addRow(data={}) {
   tr.id = `row-${rid}`;
   const kg = parseFloat(data.kg||0)||0;
   tr.dataset.freightkg = kg;
-  const nameTd = hasNameCol() ? `<td><input class="td-input" type="text" value="${data.name||''}" placeholder="Name"></td>` : '';
+  const nameTd = hasNameCol() ? `<td><input class="td-input" type="text" value="${data.name||''}" placeholder="${BOARDS[currentBoard].nameLabel||'Name'}"></td>` : '';
 
   if (currentMode==='sea') {
     tallyData[`sea-${rid}`] = 0;
